@@ -184,7 +184,57 @@ class Command(BaseCommand):
             fine_amount=500.00,
             status="PAID",
             paid_at=timezone.now() - timedelta(days=59),
-            payment_reference="PAY-UP-2026-114981",
+        # 6. Masters India Sample Goods / Commercial Vehicle AB03Y8711
+        v6 = Vehicle.objects.create(
+            registration_number="AB03Y8711",
+            owner_name="DEEPAK YADAV",
+            masked_owner="D****K Y***V",
+            maker_model="Mahindra Bolero Maxi Truck Plus",
+            vehicle_class="Goods Carrier (LGV)",
+            fuel_type="DIESEL",
+            engine_capacity_cc=2523,
+            registration_date=today - timedelta(days=900),
+            fitness_upto=today + timedelta(days=365 * 3),
+            insurance_upto=today + timedelta(days=120),
+            pucc_upto=today + timedelta(days=160),
+            rto_office="UP-79 RTO CHANDAULI / FATEHPUR, UTTAR PRADESH",
+            chassis_number_masked="MA1ZN2...8711",
+            engine_number_masked="M2DICR...8711",
+            status="ACTIVE",
+        )
+        Challan.objects.create(
+            vehicle=v6,
+            challan_number="UK199375240702184716",
+            violation_title="Violation of parking rules., Faulty number plate",
+            violation_description="Violation of parking rules. (MV act 1988 S 122,126 R/W 177) | Faulty number plate (Section 192 read with Rule 51 of the CMV rules 1989) (Remark: Without cash)",
+            offense_date=timezone.now() - timedelta(days=74),
+            offense_place="69WR+JMW, Khamanpur, Uttar Pradesh 232110, India",
+            fine_amount=11500.00,
+            status="PENDING",
+        )
+        Challan.objects.create(
+            vehicle=v6,
+            challan_number="UP79158240402111906",
+            violation_title="Violation of parking rules.",
+            violation_description="Violation of parking rules. (MV act 1988 S 122,126 R/W 177)",
+            offense_date=timezone.now() - timedelta(days=165),
+            offense_place="Canal, Rania, Fatehpur Roshanai, Uttar Pradesh 209304, India",
+            fine_amount=500.00,
+            status="PAID",
+            paid_at=timezone.now() - timedelta(days=165),
+            payment_reference="UKRTE24040046069",
+        )
+        Challan.objects.create(
+            vehicle=v6,
+            challan_number="UP176341230706121541",
+            violation_title="Faulty number plate",
+            violation_description="Faulty number plate (Section 192 read with Rule 51 of the CMV rules 1989)",
+            offense_date=timezone.now() - timedelta(days=430),
+            offense_place="Fatehpur / Rania, Uttar Pradesh",
+            fine_amount=5000.00,
+            status="PAID",
+            paid_at=timezone.now() - timedelta(days=430),
+            payment_reference="UKTTE23070070305",
         )
 
         self.stdout.write("Seeding Initial Policies in Vault...")

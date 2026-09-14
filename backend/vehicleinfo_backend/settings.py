@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -154,3 +155,21 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
 }
+
+# Live Indian Parivahan / RTO RC Verification API Settings
+# Connected to IN RTO Vehicle Information India on RapidAPI
+RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY', "be25344f86msh2328d2b47c58e27p10dff6jsnaa3ed409742e")
+RAPIDAPI_HOST = os.getenv('RAPIDAPI_HOST', 'rto-vehicle-information-india.p.rapidapi.com')
+RAPIDAPI_URL = os.getenv('RAPIDAPI_URL', 'https://rto-vehicle-information-india.p.rapidapi.com/getVehicleInfo')
+
+# Masters India SBT VAHAN & ECHALLAN API Settings
+MASTERS_INDIA_AUTH_TOKEN = os.getenv('MASTERS_INDIA_AUTH_TOKEN', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxNDgsInVzZXJuYW1lIjoicHJhdGVla3JhaStkZW1vQG1hc3RlcnNpbmRpYS5jbyIsImV4cCI6MTY5NjA0Njc4MCwiZW1haWwiOiJwcmF0ZWVrcmFpK2RlbW9AbWFzdGVyc2luZGlhLmNvIiwib3JpZ19pYXQiOjE2OTU5NjAzODB9.zWJsCcqMd06X1aMjvXPQRqQGQddKjF6vpkOZgKFG_80')
+MASTERS_INDIA_PRODUCT_ID = os.getenv('MASTERS_INDIA_PRODUCT_ID', 'arap')
+MASTERS_INDIA_MODE = os.getenv('MASTERS_INDIA_MODE', 'Buyer')
+MASTERS_INDIA_SUBID = os.getenv('MASTERS_INDIA_SUBID', '')
+MASTERS_INDIA_URL = os.getenv('MASTERS_INDIA_URL', 'https://api-platform.mastersindia.co/api/v2/sbt/VAHAN/')
+MASTERS_INDIA_ECHALLAN_URL = os.getenv('MASTERS_INDIA_ECHALLAN_URL', 'https://api-platform.mastersindia.co/api/v2/sbt/ECHALLAN/')
+
+# API Ninjas Technical Vehicle Specs API (3,000 free monthly requests)
+API_NINJAS_KEY = os.getenv('API_NINJAS_KEY', 'N1msilqTiau7ADhb4e8aJWJe6jZPGZzHj6lLvdqY')
+

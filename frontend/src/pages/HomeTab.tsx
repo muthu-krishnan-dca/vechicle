@@ -53,9 +53,10 @@ export const HomeTab: React.FC = () => {
       const v = await api.getVehicleRC(cleanPlate);
       setSelectedVehicle(v);
       setShowRcModal(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Vehicle lookup error:', err);
-      alert(`Could not retrieve records for ${cleanPlate}. Please check registration number.`);
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error;
+      alert(serverMsg || `Could not retrieve records for ${cleanPlate}. Please check registration number.`);
     }
   };
 
@@ -482,54 +483,6 @@ export const HomeTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Section 6: Smart Drive with Vehicleinfo App Promo */}
-          <div className="smart-drive-section">
-            <div className="smart-drive-content">
-              <h2><span>Drive smart</span> with Vehicleinfo app</h2>
-              <p>
-                Get the best insurance offers, manage challan payments, track your car&apos;s service history, and set automated reminders on PUC & fitness.
-              </p>
-              <div className="smart-drive-stats">
-                <div className="stat-item">
-                  <strong>4.5+ ★</strong>
-                  <span>Best Online Rating</span>
-                </div>
-                <div className="stat-item">
-                  <strong>10 Cr+</strong>
-                  <span>Trusted Users Across India</span>
-                </div>
-                <div className="stat-item">
-                  <strong>IRDAI</strong>
-                  <span>Standard Formula Verified</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Simulated QR Code & Store badges */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-              <div style={{ background: '#ffffff', padding: '12px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                {/* SVG QR Code */}
-                <svg width="110" height="110" viewBox="0 0 100 100" fill="#0f172a">
-                  <rect x="10" y="10" width="25" height="25" fill="#0f172a" />
-                  <rect x="15" y="15" width="15" height="15" fill="#ffffff" />
-                  <rect x="18" y="18" width="9" height="9" fill="#0f172a" />
-                  <rect x="65" y="10" width="25" height="25" fill="#0f172a" />
-                  <rect x="70" y="15" width="15" height="15" fill="#ffffff" />
-                  <rect x="73" y="18" width="9" height="9" fill="#0f172a" />
-                  <rect x="10" y="65" width="25" height="25" fill="#0f172a" />
-                  <rect x="15" y="70" width="15" height="15" fill="#ffffff" />
-                  <rect x="18" y="73" width="9" height="9" fill="#0f172a" />
-                  <rect x="42" y="12" width="6" height="6" fill="#0f172a" />
-                  <rect x="50" y="24" width="8" height="8" fill="#0f172a" />
-                  <rect x="42" y="42" width="16" height="16" fill="#2563eb" />
-                  <rect x="68" y="55" width="8" height="8" fill="#0f172a" />
-                  <rect x="52" y="72" width="8" height="8" fill="#0f172a" />
-                  <rect x="75" y="75" width="12" height="12" fill="#0f172a" />
-                </svg>
-              </div>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Scan to download app</span>
-            </div>
-          </div>
 
           {/* Section 7: Top Features (8 circular icons) */}
           <div style={{ marginBottom: '36px' }}>

@@ -10,6 +10,8 @@ import { IonReactRouter } from '@ionic/react-router';
 import { RcSearchPage } from './pages/RcSearchPage';
 import { CarInsurancePage } from './pages/CarInsurancePage';
 import { BikeInsurancePage } from './pages/BikeInsurancePage';
+import { CheckInsurancePage } from './pages/CheckInsurancePage';
+import { ClaimInsurancePage } from './pages/ClaimInsurancePage';
 import { HomeTab } from './pages/HomeTab';
 import { InsuranceTab } from './pages/InsuranceTab';
 import { GarageTab } from './pages/GarageTab';
@@ -47,6 +49,8 @@ const App: React.FC = () => (
         <Route path="/rc-search" element={<RcSearchPage />} />
         <Route path="/car-insurance" element={<CarInsurancePage />} />
         <Route path="/bike-insurance" element={<BikeInsurancePage />} />
+        <Route path="/check-insurance" element={<CheckInsurancePage />} />
+        <Route path="/claim-insurance" element={<ClaimInsurancePage />} />
 
         {/* Other Pages */}
         <Route path="/home" element={<HomeTab />} />

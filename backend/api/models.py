@@ -107,3 +107,73 @@ class RTOQuestion(models.Model):
 
     def __str__(self):
         return f"Q{self.id}: {self.question_text[:50]}"
+
+
+class Claim(models.Model):
+    CLAIM_TYPE_CHOICES = (
+        ('CASHLESS', 'Cashless Claim'),
+        ('REIMBURSEMENT', 'Reimbursement Claim'),
+    )
+
+    STATUS_CHOICES = (
+        ('PENDING', 'Under Review'),
+        ('APPROVED', 'Surveyor Approved'),
+        ('REJECTED', 'Claim Rejected'),
+        ('SETTLED', 'Settled & Paid'),
+    )
+
+    claim_number = models.CharField(max_length=50, unique=True, db_index=True)
+    policy = models.ForeignKey(Policy, on_delete=models.SET_NULL, null=True, blank=True, related_name='claims')
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.SET_NULL, null=True, blank=True, related_name='claims')
+    vehicle_reg_no = models.CharField(max_length=20, db_index=True)
+
+    claim_type = models.CharField(max_length=20, choices=CLAIM_TYPE_CHOICES, default='CASHLESS')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='PENDING')
+
+    # Accident Details
+    accident_date = models.DateField()
+    accident_place = models.CharField(max_length=200)
+    accident_description = models.TextField()
+    driver_name = models.CharField(max_length=100)
+    driver_license_no = models.CharField(max_length=50)
+    fir_filed = models.BooleanField(default=False)
+    fir_number = models.CharField(max_length=50, blank=True, null=True)
+
+    # Workshop / Dealer
+    workshop_name = models.CharField(max_length=150, default="Authorized Network Workshop")
+    workshop_type = models.CharField(max_length=30, default="NETWORK_CASHLESS")
+
+    # Documentation Checks
+    is_rc_submitted = models.BooleanField(default=True)
+    is_dl_submitted = models.BooleanField(default=True)
+    is_policy_submitted = models.BooleanField(default=True)
+    is_estimate_submitted = models.BooleanField(default=True)
+
+    # Damage & Settlement Assessment
+    claimed_parts = models.JSONField(default=list, help_text="List of damaged parts with name, category, claimed amount, depreciation, and approved amount")
+    claimed_labour_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    total_claimed_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
+    # IRDAI Deductions
+    depreciation_deduction = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    compulsory_excess = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    net_approved_parts = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    net_approved_labour = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    gst_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    approved_settlement_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    customer_liability = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
+    # Rejection & Audit
+    rejection_reason = models.TextField(blank=True, null=True)
+    surveyor_name = models.CharField(max_length=100, default="K. Srinivasan (IRDAI Lic #77419)")
+    surveyor_notes = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.claim_number} - {self.vehicle_reg_no} ({self.status})"
+

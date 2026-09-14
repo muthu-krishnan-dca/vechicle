@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { IonIcon, IonButton, IonSpinner, IonBadge } from '@ionic/react';
-import { closeOutline, receiptOutline, checkmarkCircle, alertCircleOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+import {
+  closeOutline,
+  receiptOutline,
+  checkmarkCircle,
+  alertCircleOutline,
+  shieldCheckmarkOutline,
+  searchOutline,
+  carSportOutline,
+  locationOutline,
+  calendarOutline,
+} from 'ionicons/icons';
 import { api, ChallanRecord } from '../services/api';
 
 interface ChallanModalProps {
@@ -15,14 +25,18 @@ export const ChallanModal: React.FC<ChallanModalProps> = ({
   regNo = 'MH01AE8055',
 }) => {
   const [currentReg, setCurrentReg] = useState(regNo);
+  const [searchInput, setSearchInput] = useState(regNo);
   const [challans, setChallans] = useState<ChallanRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [payingId, setPayingId] = useState<number | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING' | 'PAID'>('ALL');
 
   const fetchChallans = async (plate: string) => {
+    const cleanPlate = plate.replace(/\s+/g, '').toUpperCase();
+    if (!cleanPlate) return;
     setLoading(true);
     try {
-      const data = await api.getChallans(plate);
+      const data = await api.getChallans(cleanPlate);
       setChallans(data);
     } catch (err) {
       console.error('Failed to load challans:', err);
@@ -33,9 +47,27 @@ export const ChallanModal: React.FC<ChallanModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchChallans(currentReg);
+      const clean = (regNo || 'MH01AE8055').replace(/\s+/g, '').toUpperCase();
+      setCurrentReg(clean);
+      setSearchInput(clean);
+      fetchChallans(clean);
     }
-  }, [isOpen, currentReg]);
+  }, [isOpen, regNo]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = searchInput.trim().replace(/\s+/g, '').toUpperCase();
+    if (clean) {
+      setCurrentReg(clean);
+      fetchChallans(clean);
+    }
+  };
+
+  const handleQuickSelect = (plate: string) => {
+    setSearchInput(plate);
+    setCurrentReg(plate);
+    fetchChallans(plate);
+  };
 
   const handlePay = async (id: number) => {
     setPayingId(id);
@@ -52,61 +84,233 @@ export const ChallanModal: React.FC<ChallanModalProps> = ({
   if (!isOpen) return null;
 
   const pendingList = challans.filter((c) => c.status === 'PENDING');
+  const paidList = challans.filter((c) => c.status === 'PAID');
   const totalPending = pendingList.reduce((sum, c) => sum + Number(c.fine_amount), 0);
+  const totalPaid = paidList.reduce((sum, c) => sum + Number(c.fine_amount), 0);
+
+  const displayedChallans =
+    activeFilter === 'PENDING'
+      ? pendingList
+      : activeFilter === 'PAID'
+      ? paidList
+      : challans;
 
   return (
     <div className="bottom-sheet-overlay" onClick={onClose}>
-      <div className="bottom-sheet-modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '90vh' }}>
+      <div className="bottom-sheet-modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '92vh', overflowY: 'auto' }}>
         <div className="sheet-drag-pill" />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+        {/* Modal Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <IonIcon icon={receiptOutline} style={{ color: '#2563eb', fontSize: '1.2rem' }} />
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>
-                Traffic E-Challans
-              </h3>
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
-              Vehicle: <strong className="number-plate-styled" style={{ fontSize: '0.82rem', padding: '1px 6px' }}>{currentReg}</strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IonIcon icon={receiptOutline} style={{ color: '#2563eb', fontSize: '1.25rem' }} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', fontFamily: 'Outfit' }}>
+                  Vehicle e-Challans
+                </h3>
+                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                  Masters India & Parivahan Vahan e-Challan System
+                </span>
+              </div>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            style={{
+              background: '#f1f5f9',
+              border: 'none',
+              borderRadius: '50%',
+              width: '34px',
+              height: '34px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
           >
             <IonIcon icon={closeOutline} style={{ fontSize: '1.2rem', color: '#64748b' }} />
           </button>
         </div>
 
-        {/* Pending Banner */}
-        <div style={{ padding: '12px 14px', borderRadius: '12px', background: totalPending > 0 ? '#fef2f2' : '#ecfdf5', border: `1px solid ${totalPending > 0 ? '#fecaca' : '#a7f3d0'}`, marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span style={{ fontSize: '0.72rem', color: totalPending > 0 ? '#991b1b' : '#166534', fontWeight: 700 }}>
-              {totalPending > 0 ? 'Outstanding Penalties Due' : 'All Fines Settled'}
-            </span>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: totalPending > 0 ? '#dc2626' : '#16a34a', fontFamily: 'Outfit' }}>
+        {/* Search Bar */}
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input
+              type="text"
+              value={searchInput}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setSearchInput(e.target.value.toUpperCase())}
+              placeholder="Enter Vehicle Number (e.g. AB03Y8711)"
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1.5px solid #cbd5e1',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+                outline: 'none',
+                fontFamily: 'monospace',
+                background: '#f8fafc',
+              }}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              padding: '0 18px',
+              background: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              fontWeight: 700,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            {loading ? <IonSpinner name="dots" style={{ color: '#fff', width: '20px' }} /> : <><IonIcon icon={searchOutline} /> Check</>}
+          </button>
+        </form>
+
+        {/* Quick Sample Vehicle Chips */}
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '12px' }}>
+          <span style={{ fontSize: '0.7rem', color: '#64748b', alignSelf: 'center', whiteSpace: 'nowrap' }}>Sample:</span>
+          {[
+            { plate: 'AB03Y8711', label: 'AB03Y8711 (Masters India API)' },
+            { plate: 'MH01AE8055', label: 'MH01AE8055 (Hunter 350)' },
+            { plate: 'TN92L1078', label: 'TN92L1078' },
+            { plate: 'PB03Y8611', label: 'PB03Y8611 (Tata Truck)' },
+          ].map((chip) => (
+            <button
+              key={chip.plate}
+              onClick={() => handleQuickSelect(chip.plate)}
+              style={{
+                background: currentReg === chip.plate ? '#eff6ff' : '#f1f5f9',
+                color: currentReg === chip.plate ? '#2563eb' : '#475569',
+                border: `1px solid ${currentReg === chip.plate ? '#93c5fd' : '#e2e8f0'}`,
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Current Vehicle Badge & Summary Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+          {/* Pending Fines Card */}
+          <div
+            onClick={() => setActiveFilter('PENDING')}
+            style={{
+              padding: '12px 14px',
+              borderRadius: '12px',
+              background: totalPending > 0 ? '#fef2f2' : '#f0fdf4',
+              border: `1.5px solid ${activeFilter === 'PENDING' ? '#dc2626' : totalPending > 0 ? '#fecaca' : '#bbf7d0'}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.72rem', color: totalPending > 0 ? '#991b1b' : '#166534', fontWeight: 700 }}>
+                Pending Fines
+              </span>
+              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: totalPending > 0 ? '#fee2e2' : '#dcfce7', color: totalPending > 0 ? '#b91c1c' : '#15803d', fontWeight: 700 }}>
+                {pendingList.length} Active
+              </span>
+            </div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: totalPending > 0 ? '#dc2626' : '#16a34a', fontFamily: 'Outfit', marginTop: '4px' }}>
               ₹{totalPending.toLocaleString('en-IN')}
             </div>
           </div>
 
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Status</span>
-            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: totalPending > 0 ? '#b91c1c' : '#15803d' }}>
-              {pendingList.length} Pending
+          {/* Disposed / Settled Card */}
+          <div
+            onClick={() => setActiveFilter('PAID')}
+            style={{
+              padding: '12px 14px',
+              borderRadius: '12px',
+              background: '#f8fafc',
+              border: `1.5px solid ${activeFilter === 'PAID' ? '#2563eb' : '#e2e8f0'}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 700 }}>
+                Disposed (Paid)
+              </span>
+              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: '#e2e8f0', color: '#334155', fontWeight: 700 }}>
+                {paidList.length} Settled
+              </span>
+            </div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#10b981', fontFamily: 'Outfit', marginTop: '4px' }}>
+              ₹{totalPaid.toLocaleString('en-IN')}
             </div>
           </div>
         </div>
 
+        {/* Filter Switcher */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+          {[
+            { id: 'ALL', label: `All Challans (${challans.length})` },
+            { id: 'PENDING', label: `Pending (${pendingList.length})` },
+            { id: 'PAID', label: `Disposed (${paidList.length})` },
+          ].map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setActiveFilter(f.id as any)}
+              style={{
+                background: activeFilter === f.id ? '#1e293b' : 'transparent',
+                color: activeFilter === f.id ? '#ffffff' : '#64748b',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
         {/* Challans List */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '30px' }}>
+          <div style={{ textAlign: 'center', padding: '40px' }}>
             <IonSpinner name="crescent" style={{ color: '#2563eb' }} />
+            <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '8px' }}>
+              Querying e-Challan database for {currentReg}...
+            </div>
+          </div>
+        ) : displayedChallans.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', marginBottom: '16px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+              <IonIcon icon={shieldCheckmarkOutline} style={{ color: '#16a34a', fontSize: '1.6rem' }} />
+            </div>
+            <h4 style={{ margin: '0 0 4px', fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>
+              No Traffic Challans Found
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+              Vehicle <strong>{currentReg}</strong> has a 100% clean driving record with zero pending or disposed fines recorded under this filter.
+            </p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-            {challans.map((c) => {
+            {displayedChallans.map((c) => {
               const isPaid = c.status === 'PAID';
               return (
                 <div
@@ -114,31 +318,62 @@ export const ChallanModal: React.FC<ChallanModalProps> = ({
                   style={{
                     padding: '14px',
                     borderRadius: '12px',
-                    border: `1px solid ${isPaid ? '#dcfce7' : '#fee2e2'}`,
+                    border: `1.5px solid ${isPaid ? '#bbf7d0' : '#fecaca'}`,
                     background: isPaid ? '#f0fdf4' : '#fff5f5',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                     <div>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Challan: {c.challan_number}</span>
-                      <h4 style={{ margin: '2px 0', fontSize: '0.92rem', fontWeight: 700, color: '#1e293b' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace', fontWeight: 700 }}>
+                          #{c.challan_number}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>•</span>
+                        <span style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 600 }}>
+                          {c.vehicle_reg_no}
+                        </span>
+                      </div>
+                      <h4 style={{ margin: '2px 0', fontSize: '0.94rem', fontWeight: 800, color: '#1e293b' }}>
                         {c.violation_title}
                       </h4>
                     </div>
 
-                    <IonBadge style={{ '--background': isPaid ? '#dcfce7' : '#fee2e2', '--color': isPaid ? '#16a34a' : '#dc2626', fontSize: '0.7rem', fontWeight: 700 }}>
-                      {isPaid ? 'PAID' : 'PENDING'}
+                    <IonBadge
+                      style={{
+                        '--background': isPaid ? '#dcfce7' : '#fee2e2',
+                        '--color': isPaid ? '#16a34a' : '#dc2626',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                      }}
+                    >
+                      {isPaid ? 'DISPOSED' : 'PENDING'}
                     </IonBadge>
                   </div>
 
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '8px' }}>
-                    📍 {c.offense_place} • {new Date(c.offense_date).toLocaleDateString('en-IN')}
+                  {c.violation_description && (
+                    <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: '8px', lineHeight: 1.4, background: 'rgba(255,255,255,0.6)', padding: '6px 8px', borderRadius: '6px' }}>
+                      {c.violation_description}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '0.74rem', color: '#64748b', marginBottom: '8px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <IonIcon icon={locationOutline} style={{ color: '#2563eb' }} />
+                      {c.offense_place || 'Traffic Jurisdiction'}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <IonIcon icon={calendarOutline} style={{ color: '#64748b' }} />
+                      {new Date(c.offense_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                     <div>
-                      <span style={{ fontSize: '0.68rem', color: '#64748b' }}>Fine Amount</span>
-                      <div style={{ fontSize: '1.15rem', fontWeight: 800, color: isPaid ? '#16a34a' : '#dc2626' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>Fine Imposed</span>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isPaid ? '#16a34a' : '#dc2626', fontFamily: 'Outfit' }}>
                         ₹{Number(c.fine_amount).toLocaleString('en-IN')}
                       </div>
                     </div>
@@ -152,16 +387,23 @@ export const ChallanModal: React.FC<ChallanModalProps> = ({
                           '--color': '#ffffff',
                           '--border-radius': '8px',
                           fontWeight: 700,
-                          fontSize: '0.78rem',
-                          height: '34px',
+                          fontSize: '0.8rem',
+                          height: '36px',
                         }}
                       >
-                        {payingId === c.id ? <IonSpinner name="dots" /> : 'Pay Fine (PUT)'}
+                        {payingId === c.id ? <IonSpinner name="dots" /> : 'Pay Fine Online'}
                       </IonButton>
                     ) : (
-                      <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <IonIcon icon={checkmarkCircle} /> Ref: {c.payment_reference || 'PAID'}
-                      </span>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
+                          <IonIcon icon={checkmarkCircle} /> Settled & Disposed
+                        </span>
+                        {c.payment_reference && (
+                          <span style={{ fontSize: '0.68rem', color: '#64748b', fontFamily: 'monospace' }}>
+                            Receipt: {c.payment_reference}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

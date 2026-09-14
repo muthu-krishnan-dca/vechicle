@@ -69,16 +69,16 @@ export const BikeInsurancePage: React.FC = () => {
   return (
     <IonPage>
       <Header />
-      <IonContent fullscreen style={{ '--background': '#f8fafc' }}>
+      <IonContent fullscreen>
         <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '32px 20px 80px 20px' }}>
 
-          {/* Hero Banner matching Screenshot 3 */}
+          {/* Hero Banner with White & Yellow radiant shade */}
           <div
             style={{
-              background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #1e40af 100%)',
+              background: 'linear-gradient(135deg, #ffffff 0%, #fffdf0 25%, #fef9c3 55%, #fef08a 85%, #fde047 100%)',
               borderRadius: '24px',
               padding: '48px 40px',
-              color: '#ffffff',
+              color: '#0f172a',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -86,7 +86,8 @@ export const BikeInsurancePage: React.FC = () => {
               gap: '32px',
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: '0 16px 36px -10px rgba(37, 99, 235, 0.35)',
+              border: '2px solid #fde047',
+              boxShadow: '0 16px 36px -10px rgba(234, 179, 8, 0.22)',
             }}
           >
             {/* Background Watermark Scooter Silhouette */}
@@ -99,7 +100,7 @@ export const BikeInsurancePage: React.FC = () => {
                 pointerEvents: 'none',
               }}
             >
-              <svg width="400" height="260" viewBox="0 0 24 24" fill="#ffffff">
+              <svg width="400" height="260" viewBox="0 0 24 24" fill="#ca8a04">
                 <path d="M19 7c0-1.1-.9-2-2-2h-3v2h3v2.65L13.52 14H10V9H6c-2.21 0-4 1.79-4 4v3h2c0 1.66 1.34 3 3 3s3-1.34 3-3h4.48L19 10.35V7zM7 17c-.55 0-1-.45-1-1h2c0 .55-.45 1-1 1zm12-1c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
               </svg>
             </div>
@@ -113,7 +114,7 @@ export const BikeInsurancePage: React.FC = () => {
                   fontFamily: 'Outfit, sans-serif',
                   lineHeight: 1.18,
                   margin: '0 0 20px 0',
-                  color: '#ffffff',
+                  color: '#0f172a',
                   letterSpacing: '-0.02em',
                 }}
               >
@@ -125,15 +126,15 @@ export const BikeInsurancePage: React.FC = () => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  background: 'rgba(255, 255, 255, 0.14)',
+                  background: '#fef08a',
                   padding: '8px 16px',
                   borderRadius: '30px',
-                  backdropFilter: 'blur(6px)',
-                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  border: '1px solid #fde047',
+                  boxShadow: '0 2px 8px rgba(202, 138, 4, 0.15)',
                 }}
               >
                 <span style={{ fontSize: '1.1rem' }}>✨</span>
-                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ffffff' }}>
+                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#854d0e' }}>
                   Insurance plans starting at ₹457*
                 </span>
               </div>
@@ -147,7 +148,8 @@ export const BikeInsurancePage: React.FC = () => {
                 background: '#ffffff',
                 borderRadius: '20px',
                 padding: '32px 28px',
-                boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.22)',
+                boxShadow: '0 20px 40px -15px rgba(202, 138, 4, 0.16), 0 8px 24px rgba(0,0,0,0.06)',
+                border: '1.5px solid #fef08a',
                 color: '#0f172a',
                 zIndex: 2,
               }}

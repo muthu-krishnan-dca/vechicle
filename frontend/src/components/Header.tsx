@@ -14,15 +14,128 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [selectedCity, setSelectedCity] = useState(currentCity);
+  const [selectedCity, setSelectedCity] = useState<string>(() => {
+    const saved = localStorage.getItem('user_city');
+    if (saved && saved.toLowerCase() !== 'patna' && saved.toLowerCase() !== 'new delhi') {
+      return saved;
+    }
+    localStorage.removeItem('user_city');
+    return 'Live Location';
+  });
+  const [isLiveLocation, setIsLiveLocation] = useState<boolean>(() => {
+    return localStorage.getItem('user_is_live') === 'true';
+  });
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [citySearchQuery, setCitySearchQuery] = useState('');
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  const cities = ['New delhi', 'Mumbai', 'Chennai', 'Bengaluru', 'Hyderabad', 'Kochi', 'Coimbatore', 'Tirunelveli', 'Pune', 'Ahmedabad'];
+  const cities = [
+    'Chennai',
+    'Coimbatore',
+    'Madurai',
+    'Tirunelveli',
+    'Trichy',
+    'Salem',
+    'Bengaluru',
+    'Kochi',
+    'Hyderabad',
+    'Mumbai',
+    'New Delhi',
+    'Pune',
+    'Ahmedabad',
+    'Kolkata',
+  ];
+
+  const detectLiveLocation = () => {
+    setIsLocating(true);
+    setLocationError(null);
+
+    if (!navigator.geolocation) {
+      setIsLocating(false);
+      setLocationError('Geolocation is not supported by your browser. Please select your city below.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          // Reverse geocode via BigDataCloud client API
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const detected = data.city || data.locality || data.principalSubdivision;
+            if (detected && detected.toLowerCase() !== 'patna') {
+              const cleanCity = detected.trim();
+              setSelectedCity(cleanCity);
+              setIsLiveLocation(true);
+              localStorage.setItem('user_city', cleanCity);
+              localStorage.setItem('user_is_live', 'true');
+              if (onCityChange) onCityChange(cleanCity);
+              setIsLocating(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('BigDataCloud reverse geocode error:', e);
+        }
+
+        // Fallback to OpenStreetMap Nominatim with lat/lon
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data.address || {};
+            const detected = addr.city || addr.town || addr.village || addr.suburb || addr.county || addr.state_district;
+            if (detected && detected.toLowerCase() !== 'patna') {
+              const cleanCity = detected.trim();
+              setSelectedCity(cleanCity);
+              setIsLiveLocation(true);
+              localStorage.setItem('user_city', cleanCity);
+              localStorage.setItem('user_is_live', 'true');
+              if (onCityChange) onCityChange(cleanCity);
+              setIsLocating(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Nominatim reverse geocode error:', e);
+        }
+
+        setIsLocating(false);
+      },
+      (err) => {
+        setIsLocating(false);
+        setLocationError('Please allow browser location permission to detect your live location, or choose your city below.');
+        console.warn('Geolocation error / permission prompt skipped:', err.message);
+      },
+      { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
+    );
+  };
+
+  useEffect(() => {
+    // Purge any accidental Patna storage
+    const saved = localStorage.getItem('user_city');
+    if (saved && saved.toLowerCase() === 'patna') {
+      localStorage.removeItem('user_city');
+      localStorage.removeItem('user_is_live');
+    }
+    // Attempt device GPS on mount
+    detectLiveLocation();
+  }, []);
 
   const handleSelectCity = (city: string) => {
     setSelectedCity(city);
+    setIsLiveLocation(false);
+    localStorage.setItem('user_city', city);
+    localStorage.setItem('user_is_live', 'false');
     setShowCityPicker(false);
     if (onCityChange) onCityChange(city);
   };
@@ -48,13 +161,13 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header
         style={{
-          background: '#ffffff',
-          borderBottom: '1px solid #eef2f6',
+          background: 'linear-gradient(90deg, #ffffff 0%, #fffdf5 60%, #fefce8 100%)',
+          borderBottom: '1.5px solid #fef08a',
           padding: '10px 24px',
           position: 'sticky',
           top: 0,
           zIndex: 900,
-          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.04)',
+          boxShadow: '0 4px 20px rgba(234, 179, 8, 0.07)',
         }}
       >
         <div
@@ -142,28 +255,34 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Desktop Navigation Links matching Screenshot */}
+          {/* Desktop Navigation Links in Sleek Oval / Capsule shape */}
           <nav
             className="desktop-header-nav"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '4px',
+              background: 'linear-gradient(90deg, #ffffff 0%, #fffdf0 40%, #fef9c3 100%)',
+              border: '1.5px solid #fde047',
+              borderRadius: '9999px',
+              padding: '4px 6px',
+              boxShadow: '0 2px 14px rgba(202, 138, 4, 0.12)',
             }}
           >
             {/* Home */}
             <button
               onClick={() => navTo('/home')}
               style={{
-                background: 'transparent',
+                background: location.pathname === '/home' ? '#2563eb' : 'transparent',
                 border: 'none',
-                color: location.pathname === '/home' ? '#2563eb' : '#334155',
+                color: location.pathname === '/home' ? '#ffffff' : '#334155',
                 fontSize: '0.92rem',
-                fontWeight: 600,
-                padding: '8px 14px',
-                borderRadius: '20px',
+                fontWeight: 700,
+                padding: '7px 18px',
+                borderRadius: '9999px',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.2s ease',
+                boxShadow: location.pathname === '/home' ? '0 4px 12px rgba(37, 99, 235, 0.28)' : 'none',
               }}
             >
               Home
@@ -177,17 +296,19 @@ export const Header: React.FC<HeaderProps> = ({
                   setActiveDropdown(activeDropdown === 'insurance' ? null : 'insurance');
                 }}
                 style={{
-                  background: location.pathname.includes('insurance') ? '#eff6ff' : 'transparent',
+                  background: (location.pathname.includes('insurance') && location.pathname !== '/claim-insurance') ? '#2563eb' : 'transparent',
                   border: 'none',
-                  color: location.pathname.includes('insurance') ? '#2563eb' : '#334155',
+                  color: (location.pathname.includes('insurance') && location.pathname !== '/claim-insurance') ? '#ffffff' : '#334155',
                   fontSize: '0.92rem',
-                  fontWeight: 600,
-                  padding: '8px 14px',
-                  borderRadius: '20px',
+                  fontWeight: 700,
+                  padding: '7px 18px',
+                  borderRadius: '9999px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: (location.pathname.includes('insurance') && location.pathname !== '/claim-insurance') ? '0 4px 12px rgba(37, 99, 235, 0.28)' : 'none',
                 }}
               >
                 <span>Insurance</span>
@@ -239,6 +360,29 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
 
                   <button
+                    onClick={() => navTo('/check-insurance')}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      background: location.pathname === '/check-insurance' ? '#f0f7ff' : 'transparent',
+                      border: 'none',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      color: location.pathname === '/check-insurance' ? '#2563eb' : '#1e293b',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <span>🛡️</span>
+                    <span>Check Insurance Status</span>
+                  </button>
+
+
+                  <button
                     onClick={() => navTo('/bike-insurance')}
                     style={{
                       width: '100%',
@@ -286,6 +430,28 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
+            {/* Insurance Claim (Separate Nav Bar Heading) */}
+            <button
+              onClick={() => navTo('/claim-insurance')}
+              style={{
+                background: location.pathname === '/claim-insurance' ? '#2563eb' : 'transparent',
+                border: 'none',
+                color: location.pathname === '/claim-insurance' ? '#ffffff' : '#334155',
+                fontSize: '0.92rem',
+                fontWeight: 700,
+                padding: '7px 16px',
+                borderRadius: '9999px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: location.pathname === '/claim-insurance' ? '0 4px 12px rgba(37, 99, 235, 0.28)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>Insurance Claim</span>
+            </button>
+
             {/* Vehicleinfo Active Blue Pill Dropdown */}
             <div className="header-dropdown-container" style={{ position: 'relative' }}>
               <button
@@ -294,18 +460,19 @@ export const Header: React.FC<HeaderProps> = ({
                   setActiveDropdown(activeDropdown === 'vehicleinfo' ? null : 'vehicleinfo');
                 }}
                 style={{
-                  background: '#2563eb',
+                  background: (location.pathname === '/rc-search' || location.pathname === '/garage') ? '#2563eb' : 'transparent',
                   border: 'none',
-                  color: '#ffffff',
+                  color: (location.pathname === '/rc-search' || location.pathname === '/garage') ? '#ffffff' : '#334155',
                   fontSize: '0.92rem',
                   fontWeight: 700,
                   padding: '7px 18px',
-                  borderRadius: '24px',
+                  borderRadius: '9999px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
-                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.28)',
+                  transition: 'all 0.2s ease',
+                  boxShadow: (location.pathname === '/rc-search' || location.pathname === '/garage') ? '0 4px 12px rgba(37, 99, 235, 0.28)' : 'none',
                 }}
               >
                 <span>Vehicleinfo</span>
@@ -411,17 +578,19 @@ export const Header: React.FC<HeaderProps> = ({
                   setActiveDropdown(activeDropdown === 'service' ? null : 'service');
                 }}
                 style={{
-                  background: 'transparent',
+                  background: (location.pathname.includes('service') || location.pathname.includes('exam')) ? '#2563eb' : 'transparent',
                   border: 'none',
-                  color: '#334155',
+                  color: (location.pathname.includes('service') || location.pathname.includes('exam')) ? '#ffffff' : '#334155',
                   fontSize: '0.92rem',
-                  fontWeight: 600,
-                  padding: '8px 14px',
-                  borderRadius: '20px',
+                  fontWeight: 700,
+                  padding: '7px 18px',
+                  borderRadius: '9999px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: (location.pathname.includes('service') || location.pathname.includes('exam')) ? '0 4px 12px rgba(37, 99, 235, 0.28)' : 'none',
                 }}
               >
                 <span>Service</span>
@@ -527,10 +696,11 @@ export const Header: React.FC<HeaderProps> = ({
                 border: 'none',
                 color: '#334155',
                 fontSize: '0.92rem',
-                fontWeight: 600,
-                padding: '8px 14px',
-                borderRadius: '20px',
+                fontWeight: 700,
+                padding: '7px 18px',
+                borderRadius: '9999px',
                 cursor: 'pointer',
+                transition: 'all 0.15s ease',
               }}
             >
               Blogs
@@ -539,30 +709,44 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Controls: City Selector & Login Pill */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            {/* Location Selector */}
+            {/* Location Selector Pill */}
             <button
               onClick={() => setShowCityPicker(true)}
+              title={isLiveLocation ? `Live Location: ${selectedCity}` : `City: ${selectedCity} (Click to set live location)`}
               style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                background: isLiveLocation ? '#f0fdf4' : '#f8fafc',
+                border: `1.5px solid ${isLiveLocation ? '#86efac' : '#e2e8f0'}`,
                 borderRadius: '24px',
-                color: '#334155',
+                color: isLiveLocation ? '#15803d' : '#334155',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
                 fontSize: '0.85rem',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
                 padding: '7px 14px',
-                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                boxShadow: isLiveLocation ? '0 2px 10px rgba(34, 197, 94, 0.16)' : 'none',
               }}
             >
-              <span style={{ color: '#2563eb', display: 'flex', alignItems: 'center' }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="#2563eb">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                </svg>
+              <span style={{ color: isLiveLocation ? '#16a34a' : '#2563eb', display: 'flex', alignItems: 'center' }}>
+                {isLocating ? (
+                  <span style={{ animation: 'spin 1s linear infinite' }}>⏳</span>
+                ) : isLiveLocation ? (
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a', display: 'inline-block', boxShadow: '0 0 0 3px rgba(34, 197, 94, 0.3)' }} />
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#2563eb">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                  </svg>
+                )}
               </span>
-              <span>{selectedCity}</span>
+              <span>{isLocating ? 'Detecting...' : selectedCity}</span>
+              {isLiveLocation && !isLocating && (
+                <span style={{ fontSize: '0.64rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, letterSpacing: '0.3px' }}>
+                  LIVE
+                </span>
+              )}
             </button>
 
             {/* Login Dark Button */}
@@ -587,42 +771,152 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </header>
 
-      {/* City Picker Modal */}
+      {/* City / Live Location Picker Modal */}
       {showCityPicker && (
         <div className="bottom-sheet-overlay" onClick={() => setShowCityPicker(false)}>
-          <div className="bottom-sheet-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="bottom-sheet-modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '85vh', overflowY: 'auto' }}>
             <div className="sheet-drag-pill" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                Select Your City / RTO Hub
-              </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', fontFamily: 'Outfit' }}>
+                  Select Location / RTO Hub
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: '#64748b' }}>
+                  Regional jurisdiction for accurate RTO fees & state guidelines
+                </p>
+              </div>
               <button
                 onClick={() => setShowCityPicker(false)}
-                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}
               >
                 ✕
               </button>
             </div>
+
+            {/* Live GPS Detection Banner */}
+            <div
+              onClick={() => {
+                detectLiveLocation();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 16px',
+                borderRadius: '14px',
+                background: isLiveLocation ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                border: `1.5px solid ${isLiveLocation ? '#86efac' : '#93c5fd'}`,
+                cursor: 'pointer',
+                marginBottom: '16px',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
+                  <span style={{ fontSize: '1.3rem' }}>{isLocating ? '⏳' : isLiveLocation ? '📍' : '📡'}</span>
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.94rem', color: isLiveLocation ? '#166534' : '#1e40af' }}>
+                    {isLocating ? 'Detecting Live Coordinates...' : isLiveLocation ? `Live Location Active: ${selectedCity}` : 'Use Current Live Location (GPS)'}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: isLiveLocation ? '#15803d' : '#3b82f6' }}>
+                    {isLocating ? 'Acquiring GPS fix & reverse geocoding...' : 'Auto-detect your current city via satellite & network'}
+                  </div>
+                </div>
+              </div>
+              <span
+                style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 800,
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  background: isLiveLocation ? '#16a34a' : '#2563eb',
+                  color: '#ffffff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}
+              >
+                {isLocating ? 'Locating...' : isLiveLocation ? 'Active 🟢' : 'Detect GPS'}
+              </span>
+            </div>
+
+            {locationError && (
+              <div style={{ padding: '10px 14px', borderRadius: '10px', background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', fontSize: '0.8rem', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>⚠️</span>
+                <span>{locationError}</span>
+              </div>
+            )}
+
+            {/* City Search Bar */}
+            <div style={{ marginBottom: '14px' }}>
+              <input
+                type="text"
+                value={citySearchQuery}
+                onChange={(e) => setCitySearchQuery(e.target.value)}
+                placeholder="Search your city (e.g. Chennai, Madurai, Mumbai...)"
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  outline: 'none',
+                  background: '#f8fafc',
+                }}
+              />
+            </div>
+
+            {/* Custom City Apply if typed */}
+            {citySearchQuery.trim() && !cities.some(c => c.toLowerCase() === citySearchQuery.trim().toLowerCase()) && (
+              <button
+                onClick={() => handleSelectCity(citySearchQuery.trim())}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: '#eff6ff',
+                  border: '1.5px dashed #3b82f6',
+                  color: '#1d4ed8',
+                  fontWeight: 700,
+                  fontSize: '0.86rem',
+                  cursor: 'pointer',
+                  marginBottom: '12px',
+                  textAlign: 'left',
+                }}
+              >
+                📍 Set location to "<strong>{citySearchQuery.trim()}</strong>"
+              </button>
+            )}
+
+            {/* Cities Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {cities.map((city) => (
-                <button
-                  key={city}
-                  onClick={() => handleSelectCity(city)}
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: '12px',
-                    border: `1.5px solid ${selectedCity === city ? '#2563eb' : '#e2e8f0'}`,
-                    background: selectedCity === city ? '#eff6ff' : '#f8fafc',
-                    color: selectedCity === city ? '#1d4ed8' : '#334155',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
-                  📍 {city}
-                </button>
-              ))}
+              {cities
+                .filter(c => c.toLowerCase().includes(citySearchQuery.toLowerCase()))
+                .map((city) => (
+                  <button
+                    key={city}
+                    onClick={() => handleSelectCity(city)}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: `1.5px solid ${selectedCity.toLowerCase() === city.toLowerCase() ? '#2563eb' : '#e2e8f0'}`,
+                      background: selectedCity.toLowerCase() === city.toLowerCase() ? '#eff6ff' : '#f8fafc',
+                      color: selectedCity.toLowerCase() === city.toLowerCase() ? '#1d4ed8' : '#334155',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <span>📍 {city}</span>
+                    {selectedCity.toLowerCase() === city.toLowerCase() && (
+                      <span style={{ color: '#2563eb', fontWeight: 800 }}>✓</span>
+                    )}
+                  </button>
+                ))}
             </div>
           </div>
         </div>

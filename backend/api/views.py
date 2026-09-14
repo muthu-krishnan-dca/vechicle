@@ -6,7 +6,7 @@ from rest_framework import status
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
-from .models import Vehicle, Challan, Policy, RTOQuestion
+from .models import Vehicle, Challan, Policy, RTOQuestion, Claim
 from .serializers import (
     VehicleSerializer,
     ChallanSerializer,
@@ -15,9 +15,13 @@ from .serializers import (
     RTOQuestionDetailSerializer,
     QuoteRequestSerializer,
     CheckoutRequestSerializer,
+    ClaimSerializer,
+    ClaimCalculationRequestSerializer,
 )
 from .services import calculate_quotes, ADDON_DEFINITIONS
 from .rto_data import resolve_rto_office
+from .rc_service import fetch_original_vehicle_details, fetch_live_challans, sync_challans_to_db
+from .claim_service import evaluate_claim_assessment, parse_date_safe
 
 
 def clean_reg_no(reg_no: str) -> str:
@@ -48,63 +52,130 @@ class QuoteCalculatorView(APIView):
 class VehicleRCView(APIView):
     """
     GET /api/vehicle/<reg_no>/
-    Parivahan Vahan RC status lookup.
+    Parivahan Vahan RC status lookup. Connects to live external Parivahan API if configured,
+    or retrieves from database cache.
+
+    POST /api/vehicle/ or PUT /api/vehicle/<reg_no>/
+    Add or update original vehicle details directly.
     """
     def get(self, request, reg_no):
         cleaned = clean_reg_no(reg_no)
+        refresh = request.query_params.get('refresh', '').lower() == 'true'
+
         vehicle = Vehicle.objects.filter(registration_number=cleaned).first()
 
+        # If not in database or live refresh requested, attempt live Parivahan RTO API lookup
+        if not vehicle or refresh:
+            live_details = fetch_original_vehicle_details(cleaned)
+            if live_details:
+                if vehicle:
+                    for attr, val in live_details.items():
+                        setattr(vehicle, attr, val)
+                    vehicle.save()
+                else:
+                    vehicle = Vehicle.objects.create(**live_details)
+
         if not vehicle:
-            # Fallback generator for realistic lookup if user enters any valid format
-            # e.g., MH04AB1234, DL01C7788, etc.
-            today = date.today()
-            reg_date = today - timedelta(days=730)
-            vehicle = Vehicle.objects.create(
-                registration_number=cleaned,
-                owner_name="RAKESH KUMAR SHARMA",
-                masked_owner="R***SH K***R SH***A",
-                maker_model="Honda Activa 6G Standard",
-                vehicle_class="M-Cycle/Scooter(2WN)",
-                fuel_type="PETROL",
-                engine_capacity_cc=109,
-                registration_date=reg_date,
-                fitness_upto=reg_date + timedelta(days=365 * 15),
-                insurance_upto=today + timedelta(days=45),
-                pucc_upto=today + timedelta(days=90),
-                rto_office=resolve_rto_office(cleaned),
-                chassis_number_masked="ME4JF50...9821",
-                engine_number_masked="JF50E...3304",
-                status="ACTIVE",
+            return Response(
+                {
+                    "error": f"Original vehicle details for {cleaned} not found.",
+                    "registration_number": cleaned,
+                    "rto_office": resolve_rto_office(cleaned),
+                    "message": "To fetch 100% original live data for ANY vehicle in India, add your RAPIDAPI_KEY to backend settings or enter vehicle details.",
+                },
+                status=status.HTTP_404_NOT_FOUND
             )
-            # Add a demo challan for rich testing
-            Challan.objects.create(
-                vehicle=vehicle,
-                challan_number=f"CH-{cleaned[:4]}-{uuid.uuid4().hex[:6].upper()}",
-                violation_title="Riding Without Helmet (Section 194D)",
-                violation_description="Two-wheeler rider found operating motor vehicle without protective headgear conforming to BIS standards.",
-                offense_date=timezone.now() - timedelta(days=12),
-                offense_place="Main Traffic Junction, Ring Road",
-                fine_amount=1000.00,
-                status="PENDING",
-            )
+
+        if vehicle and (vehicle.challans.count() == 0 or refresh):
+            live_challans = fetch_live_challans(cleaned)
+            if live_challans:
+                sync_challans_to_db(vehicle, live_challans)
 
         serializer = VehicleSerializer(vehicle)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, reg_no=None):
+        """Register or update genuine vehicle details manually."""
+        return self._save_vehicle(request, reg_no)
+
+    def put(self, request, reg_no=None):
+        """Update genuine vehicle details manually."""
+        return self._save_vehicle(request, reg_no)
+
+    def _save_vehicle(self, request, reg_no=None):
+        data = request.data.copy()
+        if reg_no:
+            data['registration_number'] = clean_reg_no(reg_no)
+        elif 'registration_number' in data:
+            data['registration_number'] = clean_reg_no(data['registration_number'])
+
+        reg = data.get('registration_number')
+        if not reg:
+            return Response({"error": "registration_number is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        today = date.today()
+        defaults = {
+            'owner_name': data.get('owner_name', 'REGISTERED OWNER'),
+            'masked_owner': data.get('masked_owner') or data.get('owner_name', 'R***SH K***R'),
+            'maker_model': data.get('maker_model', 'Two Wheeler'),
+            'vehicle_class': data.get('vehicle_class', 'M-Cycle/Scooter(2WN)'),
+            'fuel_type': data.get('fuel_type', 'PETROL'),
+            'engine_capacity_cc': int(data.get('engine_capacity_cc', 125)),
+            'registration_date': data.get('registration_date', today - timedelta(days=365)),
+            'fitness_upto': data.get('fitness_upto', today + timedelta(days=365 * 14)),
+            'insurance_upto': data.get('insurance_upto', today + timedelta(days=180)),
+            'pucc_upto': data.get('pucc_upto', today + timedelta(days=90)),
+            'rto_office': data.get('rto_office') or resolve_rto_office(reg),
+            'chassis_number_masked': data.get('chassis_number_masked', 'MD625...8841'),
+            'engine_number_masked': data.get('engine_number_masked', 'JE35E...2190'),
+            'status': data.get('status', 'ACTIVE'),
+        }
+
+        vehicle, created = Vehicle.objects.update_or_create(
+            registration_number=reg,
+            defaults=defaults
+        )
+
+        serializer = VehicleSerializer(vehicle)
+        return Response(
+            {
+                "message": f"Original details for vehicle {reg} saved successfully.",
+                "created": created,
+                "vehicle": serializer.data
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
 
 
 class ChallanListView(APIView):
     """
     GET /api/challans/?reg_no=...&status=...
     Lists traffic challans.
+    Connects to Masters India SBT ECHALLAN API (and RapidAPI fallback) to fetch live challans
+    when vehicle has no cached records or refresh=true.
     """
     def get(self, request):
         reg_no = request.query_params.get('reg_no')
         status_param = request.query_params.get('status')
-        queryset = Challan.objects.all().order_by('-offense_date')
+        refresh = request.query_params.get('refresh', '').lower() == 'true'
 
         if reg_no:
             cleaned = clean_reg_no(reg_no)
-            queryset = queryset.filter(vehicle__registration_number=cleaned)
+            vehicle = Vehicle.objects.filter(registration_number=cleaned).first()
+            if not vehicle:
+                v_details = fetch_original_vehicle_details(cleaned)
+                if v_details:
+                    vehicle = Vehicle.objects.create(**v_details)
+
+            existing_count = Challan.objects.filter(vehicle__registration_number=cleaned).count() if vehicle else 0
+            if (existing_count == 0 or refresh) and vehicle:
+                live_challans = fetch_live_challans(cleaned)
+                if live_challans:
+                    sync_challans_to_db(vehicle, live_challans)
+
+            queryset = Challan.objects.filter(vehicle__registration_number=cleaned).order_by('-offense_date')
+        else:
+            queryset = Challan.objects.all().order_by('-offense_date')
 
         if status_param and status_param.upper() in ['PENDING', 'PAID']:
             queryset = queryset.filter(status=status_param.upper())
@@ -289,3 +360,232 @@ class RTOMockExamSubmitView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+class ClaimCalculateView(APIView):
+    """
+    Simulate and calculate claim assessment in real-time.
+    Validates policy continuity, material depreciation, compulsory excess, GST, and final payout.
+    """
+    def post(self, request):
+        serializer = ClaimCalculationRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        clean_plate = clean_reg_no(data['vehicle_reg_no'])
+        accident_date = data['accident_date']
+
+        # 1. Fetch Vehicle
+        vehicle = Vehicle.objects.filter(registration_number=clean_plate).first()
+        vehicle_class = vehicle.vehicle_class if vehicle else "M-Cycle/Scooter(2WN)"
+        engine_cc = vehicle.engine_capacity_cc if vehicle else 150
+        reg_date = vehicle.registration_date if vehicle else (date.today() - timedelta(days=365 * 2))
+
+        # 2. Fetch Active Policy for this vehicle
+        policy = Policy.objects.filter(vehicle_reg_no=clean_plate).order_by('-issued_at').first()
+        if not policy and vehicle and vehicle.insurance_upto:
+            # Synthetic policy envelope based on vehicle RC record
+            policy_start = vehicle.registration_date or (date.today() - timedelta(days=365))
+            policy_end = vehicle.insurance_upto
+            has_zero_dep = False
+        elif policy:
+            policy_start = policy.start_date
+            policy_end = policy.end_date
+            addons_str = " ".join([str(a).lower() for a in policy.selected_addons])
+            has_zero_dep = 'zero' in addons_str or 'bumper' in addons_str
+        else:
+            policy_start = None
+            policy_end = None
+            has_zero_dep = False
+
+        # 3. Check Previous Claims Count
+        prev_claims_count = Claim.objects.filter(vehicle_reg_no=clean_plate).count()
+
+        assessment = evaluate_claim_assessment(
+            accident_date=accident_date,
+            policy_start_date=policy_start,
+            policy_end_date=policy_end,
+            has_zero_dep=has_zero_dep,
+            vehicle_class=vehicle_class,
+            engine_cc=engine_cc,
+            vehicle_reg_date=reg_date,
+            claimed_parts=data.get('claimed_parts', []),
+            claimed_labour=data.get('claimed_labour_amount', 0),
+            is_rc_submitted=data.get('is_rc_submitted', True),
+            is_dl_submitted=data.get('is_dl_submitted', True),
+            is_policy_submitted=data.get('is_policy_submitted', True),
+            is_estimate_submitted=data.get('is_estimate_submitted', True),
+            claim_type=data.get('claim_type', 'CASHLESS'),
+            previous_claims_count=prev_claims_count
+        )
+
+        assessment['vehicle_details'] = {
+            'registration_number': clean_plate,
+            'maker_model': vehicle.maker_model if vehicle else 'Unknown Model',
+            'owner_name': vehicle.owner_name if vehicle else data.get('driver_name', 'Registered Owner'),
+            'policy_number': policy.policy_number if policy else (f"POL-{clean_plate}-ACT" if vehicle else "N/A"),
+            'policy_start': str(policy_start) if policy_start else None,
+            'policy_end': str(policy_end) if policy_end else None,
+        }
+
+        return Response(assessment, status=status.HTTP_200_OK)
+
+
+class ClaimSubmitView(APIView):
+    """
+    Submit and register a formal insurance claim.
+    """
+    def post(self, request):
+        clean_plate = clean_reg_no(request.data.get('vehicle_reg_no', ''))
+        if not clean_plate:
+            return Response({"error": "vehicle_reg_no is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        accident_date = parse_date_safe(request.data.get('accident_date'))
+        if not accident_date:
+            accident_date = date.today()
+
+        vehicle = Vehicle.objects.filter(registration_number=clean_plate).first()
+        policy = Policy.objects.filter(vehicle_reg_no=clean_plate).order_by('-issued_at').first()
+
+        vehicle_class = vehicle.vehicle_class if vehicle else "M-Cycle/Scooter(2WN)"
+        engine_cc = vehicle.engine_capacity_cc if vehicle else 150
+        reg_date = vehicle.registration_date if vehicle else (date.today() - timedelta(days=365 * 2))
+
+        if policy:
+            policy_start = policy.start_date
+            policy_end = policy.end_date
+            addons_str = " ".join([str(a).lower() for a in policy.selected_addons])
+            has_zero_dep = 'zero' in addons_str or 'bumper' in addons_str
+        elif vehicle and vehicle.insurance_upto:
+            policy_start = vehicle.registration_date or (date.today() - timedelta(days=365))
+            policy_end = vehicle.insurance_upto
+            has_zero_dep = False
+        else:
+            policy_start = None
+            policy_end = None
+            has_zero_dep = False
+
+        prev_claims_count = Claim.objects.filter(vehicle_reg_no=clean_plate).count()
+
+        claimed_parts = request.data.get('claimed_parts', [])
+        claimed_labour = request.data.get('claimed_labour_amount', 0)
+
+        assessment = evaluate_claim_assessment(
+            accident_date=accident_date,
+            policy_start_date=policy_start,
+            policy_end_date=policy_end,
+            has_zero_dep=has_zero_dep,
+            vehicle_class=vehicle_class,
+            engine_cc=engine_cc,
+            vehicle_reg_date=reg_date,
+            claimed_parts=claimed_parts,
+            claimed_labour=claimed_labour,
+            is_rc_submitted=request.data.get('is_rc_submitted', True),
+            is_dl_submitted=request.data.get('is_dl_submitted', True),
+            is_policy_submitted=request.data.get('is_policy_submitted', True),
+            is_estimate_submitted=request.data.get('is_estimate_submitted', True),
+            claim_type=request.data.get('claim_type', 'CASHLESS'),
+            previous_claims_count=prev_claims_count
+        )
+
+        # Generate unique claim reference
+        year = date.today().year
+        suffix = uuid.uuid4().hex[:6].upper()
+        claim_number = f"CLM-{year}-{clean_plate}-{suffix}"
+
+        initial_status = "PENDING"
+        if assessment['approval_status'] == 'REJECTED':
+            initial_status = 'REJECTED'
+
+        claim = Claim.objects.create(
+            claim_number=claim_number,
+            policy=policy,
+            vehicle=vehicle,
+            vehicle_reg_no=clean_plate,
+            claim_type=request.data.get('claim_type', 'CASHLESS'),
+            status=initial_status,
+            accident_date=accident_date,
+            accident_place=request.data.get('accident_place', 'Accident Site'),
+            accident_description=request.data.get('accident_description', 'Frontal collision damage'),
+            driver_name=request.data.get('driver_name', vehicle.owner_name if vehicle else 'Registered Driver'),
+            driver_license_no=request.data.get('driver_license_no', f"DL-{clean_plate[:4]}-2020"),
+            fir_filed=request.data.get('fir_filed', False),
+            fir_number=request.data.get('fir_number'),
+            workshop_name=request.data.get('workshop_name', 'TVS & Royal Enfield Authorized Service Centre'),
+            workshop_type=request.data.get('workshop_type', 'NETWORK_CASHLESS'),
+            is_rc_submitted=request.data.get('is_rc_submitted', True),
+            is_dl_submitted=request.data.get('is_dl_submitted', True),
+            is_policy_submitted=request.data.get('is_policy_submitted', True),
+            is_estimate_submitted=request.data.get('is_estimate_submitted', True),
+            claimed_parts=assessment['processed_parts'],
+            claimed_labour_amount=assessment['claimed_labour'],
+            total_claimed_amount=assessment['total_parts_claimed'] + assessment['claimed_labour'],
+            depreciation_deduction=assessment['total_parts_depreciation'],
+            compulsory_excess=assessment['excess_deducted'],
+            net_approved_parts=assessment['total_parts_approved'],
+            net_approved_labour=assessment['approved_labour'],
+            gst_amount=assessment['gst_amount'],
+            approved_settlement_amount=assessment['final_settlement_amount'],
+            customer_liability=assessment['customer_liability'],
+            rejection_reason="; ".join(assessment['rejection_reasons']) if assessment['rejection_reasons'] else None,
+            surveyor_notes="Initial automated IRDAI algorithmic assessment completed."
+        )
+
+        serializer = ClaimSerializer(claim)
+        resp_data = serializer.data
+        resp_data['assessment'] = assessment
+        return Response(resp_data, status=status.HTTP_201_CREATED)
+
+
+class ClaimListView(APIView):
+    """
+    List all claims or filter by registration number / status.
+    """
+    def get(self, request):
+        reg = request.query_params.get('vehicle_reg_no')
+        claim_status = request.query_params.get('status')
+        queryset = Claim.objects.all()
+
+        if reg:
+            clean = clean_reg_no(reg)
+            queryset = queryset.filter(vehicle_reg_no=clean)
+        if claim_status:
+            queryset = queryset.filter(status=claim_status.upper())
+
+        serializer = ClaimSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ClaimDetailView(APIView):
+    """
+    Get claim detail by claim_number.
+    """
+    def get(self, request, claim_number):
+        claim = get_object_or_404(Claim, claim_number=claim_number)
+        serializer = ClaimSerializer(claim)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ClaimSurveyorActionView(APIView):
+    """
+    Action endpoint for Surveyor/Insurer: Approve, Reject, or Adjust settlement.
+    """
+    def patch(self, request, claim_number):
+        claim = get_object_or_404(Claim, claim_number=claim_number)
+        new_status = request.data.get('status')
+        surveyor_notes = request.data.get('surveyor_notes')
+        approved_amount = request.data.get('approved_settlement_amount')
+
+        if new_status and new_status in ('PENDING', 'APPROVED', 'REJECTED', 'SETTLED'):
+            claim.status = new_status
+        if surveyor_notes:
+            claim.surveyor_notes = surveyor_notes
+        if approved_amount is not None:
+            claim.approved_settlement_amount = Decimal(str(approved_amount))
+            claim.customer_liability = max(Decimal('0.00'), claim.total_claimed_amount - claim.approved_settlement_amount)
+
+        claim.save()
+        serializer = ClaimSerializer(claim)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+

@@ -11,12 +11,19 @@ h1, h2, h3, h4, .brand-font {
 }
 
 body {
-  background-color: #f1f5f9;
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf0 15%, #fefce8 50%, #fef9c3 100%);
+  background-attachment: fixed;
   color: #0f172a;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
+
+ion-content {
+  --background: linear-gradient(180deg, #ffffff 0%, #fffdf2 20%, #fefce8 60%, #fef9c3 100%) !important;
+}
+
 
 /* Responsive Full Screen Content Container */
 .app-content-container {
@@ -399,9 +406,9 @@ ion-tab-bar,
 }
 
 .hero-tab-btn.active {
-  background: #eff6ff;
-  border-color: #2563eb;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2);
+  background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
+  border-color: #facc15;
+  box-shadow: 0 4px 14px rgba(202, 138, 4, 0.22);
   transform: translateY(-2px);
 }
 
@@ -419,7 +426,7 @@ ion-tab-bar,
 }
 
 .hero-tab-btn.active .hero-tab-label {
-  color: #1d4ed8;
+  color: #854d0e;
 }
 
 /* Hero Main Input Form */
@@ -431,14 +438,14 @@ ion-tab-bar,
   padding: 6px 8px 6px 16px;
   display: flex;
   align-items: center;
-  box-shadow: 0 10px 30px -4px rgba(37, 99, 235, 0.2), 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 2px solid #bfdbfe;
+  box-shadow: 0 10px 30px -4px rgba(202, 138, 4, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 2px solid #fde047;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .hero-search-form:focus-within {
-  border-color: #2563eb;
-  box-shadow: 0 12px 36px -4px rgba(37, 99, 235, 0.3);
+  border-color: #eab308;
+  box-shadow: 0 12px 36px -4px rgba(202, 138, 4, 0.25);
 }
 
 .flag-badge {

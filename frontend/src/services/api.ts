@@ -217,4 +217,133 @@ export const api = {
     const res = await apiClient.post<ExamSubmissionResponse>('/mock-test/submit/', { submissions });
     return res.data;
   },
+
+  // Vehicle Insurance Claim System
+  calculateClaim: async (payload: {
+    vehicle_reg_no: string;
+    accident_date: string;
+    accident_place?: string;
+    accident_description?: string;
+    driver_name?: string;
+    driver_license_no?: string;
+    claim_type?: string;
+    workshop_name?: string;
+    is_rc_submitted?: boolean;
+    is_dl_submitted?: boolean;
+    is_policy_submitted?: boolean;
+    is_estimate_submitted?: boolean;
+    claimed_parts: { name: string; category: string; amount: number }[];
+    claimed_labour_amount: number;
+  }): Promise<ClaimAssessment> => {
+    const res = await apiClient.post<ClaimAssessment>('/claims/calculate/', payload);
+    return res.data;
+  },
+
+  submitClaim: async (payload: any): Promise<ClaimRecord & { assessment: ClaimAssessment }> => {
+    const res = await apiClient.post<ClaimRecord & { assessment: ClaimAssessment }>('/claims/submit/', payload);
+    return res.data;
+  },
+
+  getClaims: async (vehicle_reg_no?: string, status?: string): Promise<ClaimRecord[]> => {
+    const params: Record<string, string> = {};
+    if (vehicle_reg_no) params.vehicle_reg_no = vehicle_reg_no;
+    if (status) params.status = status;
+    const res = await apiClient.get<ClaimRecord[]>('/claims/', { params });
+    return res.data;
+  },
+
+  getClaimDetail: async (claimNumber: string): Promise<ClaimRecord> => {
+    const res = await apiClient.get<ClaimRecord>(`/claims/${encodeURIComponent(claimNumber)}/`);
+    return res.data;
+  },
+
+  updateClaimStatus: async (claimNumber: string, payload: {
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SETTLED';
+    surveyor_notes?: string;
+    approved_settlement_amount?: number;
+  }): Promise<ClaimRecord> => {
+    const res = await apiClient.patch<ClaimRecord>(`/claims/${encodeURIComponent(claimNumber)}/status/`, payload);
+    return res.data;
+  },
 };
+
+export interface ProcessedPartItem {
+  name: string;
+  category: 'PLASTIC' | 'RUBBER' | 'NYLON' | 'GLASS' | 'FIBRE' | 'METAL' | string;
+  claimed_amount: number;
+  depreciation_percent: number;
+  depreciation_amount: number;
+  approved_amount: number;
+  rule: string;
+}
+
+export interface ClaimAssessment {
+  approval_status: 'APPROVED' | 'REJECTED' | 'DOCUMENTS_PENDING';
+  continuity_status: string;
+  rejection_reasons: string[];
+  claim_type: 'CASHLESS' | 'REIMBURSEMENT';
+  settlement_mode_text: string;
+  vehicle_age_years: number;
+  has_zero_dep: boolean;
+  compulsory_excess: number;
+  excess_deducted: number;
+  total_parts_claimed: number;
+  total_parts_depreciation: number;
+  total_parts_approved: number;
+  claimed_labour: number;
+  approved_labour: number;
+  net_assessed_before_excess: number;
+  net_after_excess: number;
+  gst_percent: number;
+  gst_amount: number;
+  final_settlement_amount: number;
+  customer_liability: number;
+  processed_parts: ProcessedPartItem[];
+  previous_claims_count: number;
+  ncb_loss_warning?: string | null;
+  vehicle_details?: {
+    registration_number: string;
+    maker_model: string;
+    owner_name: string;
+    policy_number: string;
+    policy_start: string | null;
+    policy_end: string | null;
+  };
+}
+
+export interface ClaimRecord {
+  id: number;
+  claim_number: string;
+  vehicle_reg_no: string;
+  claim_type: 'CASHLESS' | 'REIMBURSEMENT';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SETTLED';
+  accident_date: string;
+  accident_place: string;
+  accident_description: string;
+  driver_name: string;
+  driver_license_no: string;
+  fir_filed: boolean;
+  fir_number?: string | null;
+  workshop_name: string;
+  workshop_type: string;
+  is_rc_submitted: boolean;
+  is_dl_submitted: boolean;
+  is_policy_submitted: boolean;
+  is_estimate_submitted: boolean;
+  claimed_parts: ProcessedPartItem[];
+  claimed_labour_amount: number;
+  total_claimed_amount: number;
+  depreciation_deduction: number;
+  compulsory_excess: number;
+  net_approved_parts: number;
+  net_approved_labour: number;
+  gst_amount: number;
+  approved_settlement_amount: number;
+  customer_liability: number;
+  rejection_reason?: string | null;
+  surveyor_name: string;
+  surveyor_notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+

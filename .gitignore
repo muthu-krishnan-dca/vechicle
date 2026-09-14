@@ -54,3 +54,7 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Scratch temporary test scripts
+scratch/
+backend/scratch/

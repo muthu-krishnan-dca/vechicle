@@ -63,16 +63,16 @@ export const CarInsurancePage: React.FC = () => {
   return (
     <IonPage>
       <Header />
-      <IonContent fullscreen style={{ '--background': '#f8fafc' }}>
+      <IonContent fullscreen>
         <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '32px 20px 80px 20px' }}>
 
-          {/* Hero Banner matching Screenshot 2 */}
+          {/* Hero Banner with White & Yellow radiant shade */}
           <div
             style={{
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%)',
+              background: 'linear-gradient(135deg, #ffffff 0%, #fffdf0 25%, #fef9c3 55%, #fef08a 85%, #fde047 100%)',
               borderRadius: '24px',
               padding: '48px 40px',
-              color: '#ffffff',
+              color: '#0f172a',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -80,7 +80,8 @@ export const CarInsurancePage: React.FC = () => {
               gap: '32px',
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: '0 16px 36px -10px rgba(37, 99, 235, 0.35)',
+              border: '2px solid #fde047',
+              boxShadow: '0 16px 36px -10px rgba(234, 179, 8, 0.22)',
             }}
           >
             {/* Background Watermark Car Silhouette */}
@@ -93,7 +94,7 @@ export const CarInsurancePage: React.FC = () => {
                 pointerEvents: 'none',
               }}
             >
-              <svg width="450" height="250" viewBox="0 0 24 24" fill="#ffffff">
+              <svg width="450" height="250" viewBox="0 0 24 24" fill="#ca8a04">
                 <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
               </svg>
             </div>
@@ -107,7 +108,7 @@ export const CarInsurancePage: React.FC = () => {
                   fontFamily: 'Outfit, sans-serif',
                   lineHeight: 1.18,
                   margin: '0 0 20px 0',
-                  color: '#ffffff',
+                  color: '#0f172a',
                   letterSpacing: '-0.02em',
                 }}
               >
@@ -119,15 +120,15 @@ export const CarInsurancePage: React.FC = () => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  background: 'rgba(255, 255, 255, 0.14)',
+                  background: '#fef08a',
                   padding: '8px 16px',
                   borderRadius: '30px',
-                  backdropFilter: 'blur(6px)',
-                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  border: '1px solid #fde047',
+                  boxShadow: '0 2px 8px rgba(202, 138, 4, 0.15)',
                 }}
               >
                 <span style={{ fontSize: '1.1rem' }}>✨</span>
-                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ffffff' }}>
+                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#854d0e' }}>
                   Save up to 91% on Car Insurance
                 </span>
               </div>
@@ -141,7 +142,8 @@ export const CarInsurancePage: React.FC = () => {
                 background: '#ffffff',
                 borderRadius: '20px',
                 padding: '32px 28px',
-                boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.22)',
+                boxShadow: '0 20px 40px -15px rgba(202, 138, 4, 0.16), 0 8px 24px rgba(0,0,0,0.06)',
+                border: '1.5px solid #fef08a',
                 color: '#0f172a',
                 zIndex: 2,
               }}

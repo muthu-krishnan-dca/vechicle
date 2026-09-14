@@ -13,6 +13,8 @@ from .views import (
     ClaimListView,
     ClaimDetailView,
     ClaimSurveyorActionView,
+    EChallanCaptchaView,
+    EChallanSearchView,
 )
 
 urlpatterns = [
@@ -32,5 +34,9 @@ urlpatterns = [
     path('claims/', ClaimListView.as_view(), name='claim-list'),
     path('claims/<str:claim_number>/', ClaimDetailView.as_view(), name='claim-detail'),
     path('claims/<str:claim_number>/status/', ClaimSurveyorActionView.as_view(), name='claim-surveyor-action'),
+    # Free Parivahan e-Challan Scraper Routes
+    path('scraper/echallan/captcha/', EChallanCaptchaView.as_view(), name='scraper-echallan-captcha'),
+    path('scraper/echallan/search/', EChallanSearchView.as_view(), name='scraper-echallan-search'),
 ]
+
 

@@ -265,7 +265,43 @@ export const api = {
     const res = await apiClient.patch<ClaimRecord>(`/claims/${encodeURIComponent(claimNumber)}/status/`, payload);
     return res.data;
   },
+
+  // Free Parivahan e-Challan Scraper API
+  getEchallanCaptcha: async (sessionId?: string): Promise<EchallanCaptchaResponse> => {
+    const params = sessionId ? { session_id: sessionId } : {};
+    const res = await apiClient.get<EchallanCaptchaResponse>('/scraper/echallan/captcha/', { params });
+    return res.data;
+  },
+
+  searchEchallanScraper: async (payload: {
+    session_id: string;
+    vehicle_no: string;
+    captcha_text: string;
+  }): Promise<EchallanSearchResponse> => {
+    const res = await apiClient.post<EchallanSearchResponse>('/scraper/echallan/search/', payload);
+    return res.data;
+  },
 };
+
+export interface EchallanCaptchaResponse {
+  success: boolean;
+  session_id: string;
+  captcha_image: string;
+  portal?: string;
+  error?: string;
+}
+
+export interface EchallanSearchResponse {
+  success: boolean;
+  status: 'CLEAN' | 'FOUND' | string;
+  vehicle_number: string;
+  total_challans: number;
+  challans: ChallanRecord[];
+  message: string;
+  error?: string;
+  new_captcha?: string;
+}
+
 
 export interface ProcessedPartItem {
   name: string;

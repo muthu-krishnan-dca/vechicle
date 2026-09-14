@@ -10,6 +10,11 @@ import {
   carSportOutline,
   locationOutline,
   calendarOutline,
+  refreshOutline,
+  globeOutline,
+  cloudDownloadOutline,
+  sparklesOutline,
+  informationCircleOutline,
 } from 'ionicons/icons';
 import { api, ChallanRecord } from '../services/api';
 
@@ -31,6 +36,15 @@ export const ChallanModal: React.FC<ChallanModalProps> = ({
   const [payingId, setPayingId] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING' | 'PAID'>('ALL');
 
+  // Free Parivahan eChallan Scraper States
+  const [showGovtScraper, setShowGovtScraper] = useState(false);
+  const [captchaSessionId, setCaptchaSessionId] = useState<string | null>(null);
+  const [captchaImage, setCaptchaImage] = useState<string | null>(null);
+  const [captchaInput, setCaptchaInput] = useState('');
+  const [captchaLoading, setCaptchaLoading] = useState(false);
+  const [scraperSubmitting, setScraperSubmitting] = useState(false);
+  const [scraperMessage, setScraperMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
   const fetchChallans = async (plate: string) => {
     const cleanPlate = plate.replace(/\s+/g, '').toUpperCase();
     if (!cleanPlate) return;
@@ -42,6 +56,96 @@ export const ChallanModal: React.FC<ChallanModalProps> = ({
       console.error('Failed to load challans:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFreshCaptcha = async (sessionId?: string) => {
+    setCaptchaLoading(true);
+    setScraperMessage(null);
+    try {
+      const res = await api.getEchallanCaptcha(sessionId);
+      if (res.success) {
+        setCaptchaSessionId(res.session_id);
+        setCaptchaImage(res.captcha_image);
+        setCaptchaInput('');
+      } else {
+        setScraperMessage({ type: 'error', text: res.error || 'Failed to connect to Parivahan portal.' });
+      }
+    } catch (err) {
+      setScraperMessage({ type: 'error', text: 'Error contacting scraper service.' });
+    } finally {
+      setCaptchaLoading(false);
+    }
+  };
+
+  const handleToggleGovtScraper = () => {
+    if (!showGovtScraper) {
+      setShowGovtScraper(true);
+      loadFreshCaptcha();
+    } else {
+      setShowGovtScraper(false);
+      setScraperMessage(null);
+    }
+  };
+
+  const handleScraperSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!captchaSessionId || !captchaInput.trim()) return;
+
+    setScraperSubmitting(true);
+    setScraperMessage(null);
+    try {
+      const cleanPlate = currentReg.replace(/\s+/g, '').toUpperCase();
+      const res = await api.searchEchallanScraper({
+        session_id: captchaSessionId,
+        vehicle_no: cleanPlate,
+        captcha_text: captchaInput.trim(),
+      });
+
+      if (res.success) {
+        if (res.status === 'CLEAN' || res.total_challans === 0) {
+          setScraperMessage({
+            type: 'info',
+            text: `100% Clean Record! No active or disposed challans found for ${cleanPlate} in Parivahan database.`,
+          });
+        } else {
+          setScraperMessage({
+            type: 'success',
+            text: `Success! Retrieved & saved ${res.total_challans} live Parivahan challan(s) into database.`,
+          });
+        }
+        // Refresh challans from database
+        await fetchChallans(cleanPlate);
+        setTimeout(() => {
+          setShowGovtScraper(false);
+        }, 3000);
+      } else {
+        setScraperMessage({ type: 'error', text: res.message || 'Verification failed.' });
+        if (res.new_captcha) {
+          setCaptchaImage(res.new_captcha);
+          setCaptchaInput('');
+        } else {
+          loadFreshCaptcha(captchaSessionId);
+        }
+      }
+    } catch (err: any) {
+      const errData = err.response?.data;
+      if (errData?.error === 'INVALID_CAPTCHA') {
+        setScraperMessage({ type: 'error', text: 'Incorrect CAPTCHA entered. Please try again with the new image.' });
+        if (errData.new_captcha) {
+          setCaptchaImage(errData.new_captcha);
+        } else {
+          loadFreshCaptcha(captchaSessionId || undefined);
+        }
+        setCaptchaInput('');
+      } else {
+        setScraperMessage({
+          type: 'error',
+          text: errData?.message || 'Failed to query Parivahan e-Challan portal. Please retry.',
+        });
+      }
+    } finally {
+      setScraperSubmitting(false);
     }
   };
 
@@ -209,7 +313,211 @@ export const ChallanModal: React.FC<ChallanModalProps> = ({
           ))}
         </div>
 
+        {/* Parivahan Live Govt Portal Scraper Sync Trigger */}
+        <div style={{ marginBottom: '14px' }}>
+          <div
+            onClick={handleToggleGovtScraper}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+              color: '#ffffff',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.15)',
+              border: '1px solid #334155',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IonIcon icon={globeOutline} style={{ color: '#fff', fontSize: '1rem' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, letterSpacing: '0.3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Parivahan Live Govt Sync
+                  <span style={{ fontSize: '0.62rem', background: '#10b981', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                    100% FREE
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                  Direct search on echallan.parivahan.gov.in • No commercial API key
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              style={{
+                background: showGovtScraper ? '#334155' : '#2563eb',
+                color: '#fff',
+                border: 'none',
+                padding: '5px 10px',
+                borderRadius: '6px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              {showGovtScraper ? 'Close' : 'Live Sync'}
+            </button>
+          </div>
+
+          {/* Interactive CAPTCHA Scraper Form */}
+          {showGovtScraper && (
+            <div
+              style={{
+                marginTop: '10px',
+                padding: '14px',
+                background: '#f8fafc',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '12px',
+                animation: 'fadeIn 0.2s ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <IonIcon icon={shieldCheckmarkOutline} style={{ color: '#2563eb' }} />
+                  Govt Parivahan CAPTCHA Verification for <strong style={{ color: '#2563eb' }}>{currentReg}</strong>
+                </span>
+                <span style={{ fontSize: '0.68rem', color: '#64748b' }}>Ministry of Road Transport</span>
+              </div>
+
+              {scraperMessage && (
+                <div
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    marginBottom: '10px',
+                    fontSize: '0.74rem',
+                    fontWeight: 600,
+                    background: scraperMessage.type === 'success' ? '#dcfce7' : scraperMessage.type === 'error' ? '#fee2e2' : '#eff6ff',
+                    color: scraperMessage.type === 'success' ? '#15803d' : scraperMessage.type === 'error' ? '#b91c1c' : '#1d4ed8',
+                    border: `1px solid ${scraperMessage.type === 'success' ? '#86efac' : scraperMessage.type === 'error' ? '#fca5a5' : '#bfdbfe'}`,
+                  }}
+                >
+                  {scraperMessage.text}
+                </div>
+              )}
+
+              <form onSubmit={handleScraperSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Captcha Image Container */}
+                  <div
+                    style={{
+                      height: '42px',
+                      background: '#000000',
+                      borderRadius: '8px',
+                      padding: '2px 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: '130px',
+                      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.4)',
+                    }}
+                  >
+                    {captchaLoading ? (
+                      <IonSpinner name="dots" style={{ color: '#ffffff', width: '24px' }} />
+                    ) : captchaImage ? (
+                      <img
+                        src={captchaImage}
+                        alt="Parivahan Captcha"
+                        style={{ maxHeight: '36px', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Loading...</span>
+                    )}
+                  </div>
+
+                  {/* Refresh Captcha Button */}
+                  <button
+                    type="button"
+                    onClick={() => loadFreshCaptcha(captchaSessionId || undefined)}
+                    disabled={captchaLoading}
+                    title="Refresh CAPTCHA image"
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      background: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#475569',
+                    }}
+                  >
+                    <IonIcon icon={refreshOutline} style={{ fontSize: '1.1rem' }} />
+                  </button>
+
+                  {/* Captcha Input */}
+                  <input
+                    type="text"
+                    value={captchaInput}
+                    onChange={(e) => setCaptchaInput(e.target.value.trim())}
+                    placeholder="Enter code"
+                    maxLength={7}
+                    required
+                    style={{
+                      flex: 1,
+                      height: '42px',
+                      padding: '0 12px',
+                      borderRadius: '8px',
+                      border: '1.5px solid #94a3b8',
+                      fontSize: '0.95rem',
+                      fontWeight: 800,
+                      fontFamily: 'monospace',
+                      letterSpacing: '2px',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                    Type the characters shown in image. Free live sync.
+                  </span>
+                  <button
+                    type="submit"
+                    disabled={scraperSubmitting || captchaLoading || !captchaInput.trim()}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      background: '#10b981',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    {scraperSubmitting ? (
+                      <>
+                        <IonSpinner name="dots" style={{ color: '#fff', width: '20px' }} />
+                        <span>Querying Parivahan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <IonIcon icon={cloudDownloadOutline} />
+                        <span>Verify & Fetch</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+
         {/* Current Vehicle Badge & Summary Cards */}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
           {/* Pending Fines Card */}
           <div

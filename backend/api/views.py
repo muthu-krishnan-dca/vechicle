@@ -1,3 +1,4 @@
+from decimal import Decimal
 import uuid
 from datetime import date, timedelta
 from rest_framework.views import APIView
@@ -22,6 +23,11 @@ from .services import calculate_quotes, ADDON_DEFINITIONS
 from .rto_data import resolve_rto_office
 from .rc_service import fetch_original_vehicle_details, fetch_live_challans, sync_challans_to_db
 from .claim_service import evaluate_claim_assessment, parse_date_safe
+from .scraper_service import (
+    create_echallan_session,
+    refresh_echallan_captcha,
+    query_echallan_parivahan,
+)
 
 
 def clean_reg_no(reg_no: str) -> str:
@@ -588,4 +594,54 @@ class ClaimSurveyorActionView(APIView):
         claim.save()
         serializer = ClaimSerializer(claim)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class EChallanCaptchaView(APIView):
+    """
+    GET /api/scraper/echallan/captcha/
+    Initializes a session with the official Parivahan e-Challan portal (100% free)
+    and delivers the CAPTCHA image as Base64.
+    If `session_id` query param is provided, refreshes the CAPTCHA image for that session.
+    """
+    def get(self, request):
+        session_id = request.query_params.get('session_id')
+        if session_id:
+            res = refresh_echallan_captcha(session_id)
+        else:
+            res = create_echallan_session()
+
+        if not res.get('success'):
+            return Response(res, status=status.HTTP_502_BAD_GATEWAY)
+
+        return Response(res, status=status.HTTP_200_OK)
+
+
+class EChallanSearchView(APIView):
+    """
+    POST /api/scraper/echallan/search/
+    Submits vehicle search with CAPTCHA code to official Parivahan e-Challan portal.
+    Syncs results to MySQL and returns formatted challans.
+    Payload: { "session_id": "...", "vehicle_no": "...", "captcha_text": "..." }
+    """
+    def post(self, request):
+        session_id = request.data.get('session_id')
+        vehicle_no = request.data.get('vehicle_no')
+        captcha_text = request.data.get('captcha_text')
+
+        if not session_id or not vehicle_no or not captcha_text:
+            return Response(
+                {"error": "session_id, vehicle_no, and captcha_text are all required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        result = query_echallan_parivahan(session_id, vehicle_no, captcha_text)
+
+        if not result.get('success'):
+            if result.get('error') == 'INVALID_CAPTCHA':
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            if result.get('error') == 'SESSION_EXPIRED':
+                return Response(result, status=status.HTTP_410_GONE)
+            return Response(result, status=status.HTTP_502_BAD_GATEWAY)
+
+        return Response(result, status=status.HTTP_200_OK)
 

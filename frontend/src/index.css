@@ -698,8 +698,8 @@ ion-tab-bar,
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.2fr 1.5fr;
-  gap: 32px;
+  grid-template-columns: 2fr 1fr 1.2fr;
+  gap: 36px;
   margin-bottom: 36px;
 }
 

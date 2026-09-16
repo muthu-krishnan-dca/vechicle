@@ -4,7 +4,6 @@ import {
   IonHeader,
   IonContent,
   IonIcon,
-  IonButton,
 } from '@ionic/react';
 import {
   shieldCheckmarkOutline,
@@ -18,87 +17,126 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { RtoExamModal } from '../components/RtoExamModal';
 import { ChallanModal } from '../components/ChallanModal';
+import { RtoOfficeModal } from '../components/RtoOfficeModal';
+import { ResaleValueModal } from '../components/ResaleValueModal';
+import { TrafficRulesModal } from '../components/TrafficRulesModal';
 
 export const ServicesTab: React.FC = () => {
   const navigate = useNavigate();
   const [showExamModal, setShowExamModal] = useState(false);
   const [showChallanModal, setShowChallanModal] = useState(false);
+  const [showRtoOfficeModal, setShowRtoOfficeModal] = useState(false);
+  const [showResaleModal, setShowResaleModal] = useState(false);
+  const [showRulesModal, setShowRulesModal] = useState(false);
 
   const exclusiveServices = [
     {
       id: 'exam',
       title: 'Practice driving exam',
-      color: '#3b82f6',
+      subtitle: '2026 RTO learner license mock test',
+      color: '#2563eb',
+      gradient: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <rect x="10" y="8" width="28" height="34" rx="4" fill="#ffffff" stroke="#94a3b8" strokeWidth="2" />
+        <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+          <rect x="10" y="8" width="28" height="34" rx="6" fill="#ffffff" />
           <circle cx="24" cy="24" r="10" fill="#22c55e" />
-          <text x="24" y="28" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="bold">A</text>
+          <text x="24" y="28.5" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="900" fontFamily="Outfit, sans-serif">A</text>
         </svg>
       ),
       action: () => setShowExamModal(true),
     },
     {
       id: 'dl_sign',
-      title: 'DL Que. & Sign',
-      color: '#0ea5e9',
+      title: 'DL Que. & Road Sign',
+      subtitle: 'Official traffic regulatory symbols',
+      color: '#0284c7',
+      gradient: 'linear-gradient(135deg, #0369a1 0%, #0284c7 100%)',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <rect x="8" y="10" width="32" height="24" rx="6" fill="#38bdf8" />
-          <text x="24" y="27" textAnchor="middle" fill="#ffffff" fontSize="18" fontWeight="bold">?</text>
-          <circle cx="16" cy="38" r="2" fill="#38bdf8" />
-          <circle cx="22" cy="38" r="2" fill="#38bdf8" />
+        <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+          <rect x="8" y="10" width="32" height="24" rx="8" fill="#ffffff" />
+          <circle cx="24" cy="22" r="7" fill="#0284c7" />
+          <text x="24" y="26" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="900">?</text>
+          <circle cx="16" cy="38" r="2.5" fill="#ffffff" opacity="0.8" />
+          <circle cx="22" cy="38" r="2.5" fill="#ffffff" opacity="0.8" />
         </svg>
       ),
       action: () => setShowExamModal(true),
     },
     {
       id: 'driving_school',
-      title: 'Driving school',
-      color: '#6366f1',
+      title: 'Driving school directory',
+      subtitle: 'Certified motor training institutes',
+      color: '#4f46e5',
+      gradient: 'linear-gradient(135deg, #3730a3 0%, #4f46e5 100%)',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="16" stroke="#475569" strokeWidth="4" />
-          <circle cx="24" cy="24" r="6" fill="#475569" />
-          <line x1="8" y1="24" x2="18" y2="24" stroke="#475569" strokeWidth="3" />
-          <line x1="30" y1="24" x2="40" y2="24" stroke="#475569" strokeWidth="3" />
-          <line x1="24" y1="30" x2="24" y2="40" stroke="#475569" strokeWidth="3" />
+        <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="16" stroke="#ffffff" strokeWidth="4" />
+          <circle cx="24" cy="24" r="6" fill="#ffffff" />
+          <line x1="8" y1="24" x2="18" y2="24" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+          <line x1="30" y1="24" x2="40" y2="24" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+          <line x1="24" y1="30" x2="24" y2="40" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
         </svg>
       ),
-      action: () => alert('RTO Certified Driving Schools: 42 certified motor training institutes found nearby.'),
+      action: () => setShowRtoOfficeModal(true),
     },
     {
       id: 'traffic_rules',
-      title: 'Traffic rules & penal',
-      color: '#8b5cf6',
+      title: 'Traffic rules & penalty',
+      subtitle: 'Motor Vehicles Act fines & norms',
+      color: '#7c3aed',
+      gradient: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <rect x="12" y="10" width="24" height="30" rx="3" fill="#3b82f6" />
-          <rect x="16" y="14" width="16" height="5" rx="1.5" fill="#fef08a" />
-          <line x1="16" y1="24" x2="28" y2="24" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-          <line x1="16" y1="29" x2="26" y2="29" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
+        <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+          <rect x="12" y="9" width="24" height="32" rx="5" fill="#ffffff" />
+          <rect x="16" y="14" width="16" height="5" rx="2" fill="#fbbf24" />
+          <line x1="16" y1="24" x2="30" y2="24" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="16" y1="30" x2="26" y2="30" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" />
         </svg>
       ),
-      action: () => alert('Motor Vehicles (Amendment) Act 2019: View all offenses and penalties.'),
+      action: () => setShowRulesModal(true),
+    },
+  ];
+
+  const otherServices = [
+    {
+      title: 'Resale value',
+      icon: '💰',
+      tag: 'Market Appraisal',
+      desc: 'Calculate real-time valuation for used cars and bikes',
+      action: () => setShowResaleModal(true),
+    },
+    {
+      title: 'RTO office',
+      icon: '🏢',
+      tag: 'Live GPS & Forms',
+      desc: 'Find nearby RTO codes, address, timings & forms',
+      action: () => setShowRtoOfficeModal(true),
+    },
+    {
+      title: 'Traffic rules & penalty',
+      icon: '🚦',
+      tag: 'Official MV Act',
+      desc: 'View all traffic offenses, fines & points system',
+      action: () => setShowRulesModal(true),
     },
   ];
 
   const carServices = [
-    { title: 'Car insurance', icon: '🚗', action: () => navigate('/insurance') },
-    { title: 'Check car challan', icon: '👮', action: () => setShowChallanModal(true) },
-    { title: 'Sell your car', icon: '🔑', action: () => alert('Sell Car: Free doorstep evaluation scheduled.') },
-    { title: 'Check car history', icon: '📋', action: () => alert('Car History: Zero accident claim record.') },
-    { title: 'Buy used car', icon: '🚙', action: () => alert('Certified Pre-Owned Cars: 140-point inspection.') },
-    { title: 'Car check', icon: '🔧', action: () => alert('Comprehensive Health Check: Diagnostic scanner report.') },
-    { title: 'FASTag manager', icon: '💳', action: () => alert('FASTag Balance & Recharge active.') },
-    { title: 'Cash loan', icon: '💰', action: () => alert('Instant vehicle equity loan up to 80% valuation.') },
+    { title: 'Car insurance', icon: '🚗', action: () => navigate('/car-insurance') },
+    { title: 'Check car challan', icon: '🚨', action: () => setShowChallanModal(true) },
+    { title: 'Sell your car', icon: '🔑', action: () => setShowResaleModal(true) },
+    { title: 'Check car history', icon: '📋', action: () => navigate('/rc-search') },
+    { title: 'Buy used car', icon: '🚙', action: () => navigate('/rc-search') },
+    { title: 'Car check', icon: '🔧', action: () => navigate('/rc-search') },
+    { title: 'FASTag manager', icon: '💳', action: () => navigate('/rc-search') },
+    { title: 'Cash loan', icon: '💰', action: () => setShowResaleModal(true) },
   ];
 
   const bikeServices = [
-    { title: 'Bike insurance', icon: '🏍️', action: () => navigate('/insurance') },
-    { title: 'Pay bike challan', icon: '🚨', action: () => setShowChallanModal(true) },
-    { title: 'Bike resale value', icon: '🪙', action: () => alert('Resale Value Calculator: Orange Book Value algorithm.') },
-    { title: 'New bikes', icon: '✨', action: () => navigate('/insurance') },
+    { title: 'Bike insurance', icon: '🏍️', action: () => navigate('/bike-insurance') },
+    { title: 'Pay bike challan', icon: '👮', action: () => setShowChallanModal(true) },
+    { title: 'Bike resale value', icon: '🪙', action: () => setShowResaleModal(true) },
+    { title: 'New bikes', icon: '✨', action: () => navigate('/bike-insurance') },
   ];
 
   return (
@@ -106,189 +144,356 @@ export const ServicesTab: React.FC = () => {
       <IonHeader className="ion-no-border">
         <Header />
       </IonHeader>
-      <IonContent fullscreen style={{ '--background': '#ffffff' }}>
+
+      <IonContent fullscreen style={{ '--background': '#f8fafc' }}>
         <div className="app-content-container">
-          {/* Section: Exclusive Services (matching Screenshot 5) */}
-          <div style={{ marginBottom: '28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '18px' }}>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.01em' }}>
-                Exclusive services
-              </h3>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+          {/* ================= SECTION MELA ULLATHU (IMPROVED TOP SECTION) ================= */}
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '24px 16px 22px 16px',
+              margin: '0 auto 20px auto',
+              maxWidth: '860px',
+            }}
+          >
+            {/* Pill Tag */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#eff6ff',
+                border: '1.5px solid #bfdbfe',
+                padding: '4px 14px',
+                borderRadius: '24px',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                color: '#1d4ed8',
+                marginBottom: '10px',
+                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.08)',
+              }}
+            >
+              <span>🚗</span>
+              <span>ALL-IN-ONE VEHICLE SOLUTION</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+            {/* Main Heading */}
+            <h1
+              style={{
+                margin: '0 0 8px 0',
+                fontSize: '2.1rem',
+                fontWeight: 900,
+                color: '#0f172a',
+                fontFamily: 'Outfit, sans-serif',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.15,
+              }}
+            >
+              Vehicle Services & Citizen Hub
+            </h1>
+
+            {/* Subtitle */}
+            <p
+              style={{
+                margin: '0 auto',
+                fontSize: '0.92rem',
+                color: '#64748b',
+                maxWidth: '680px',
+                lineHeight: 1.5,
+              }}
+            >
+              Access verified RTO office directory, take learner license mock exams, check camera challans, calculate resale valuation, and manage vehicle documents.
+            </p>
+          </div>
+
+          {/* ================= SECTION: EXCLUSIVE SERVICES ================= */}
+          <div style={{ marginBottom: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '18px' }}>
+              <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.01em', fontFamily: 'Outfit' }}>
+                Exclusive services
+              </h3>
+              <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
               {exclusiveServices.map((s) => (
                 <div
                   key={s.id}
                   onClick={s.action}
                   className="white-card"
                   style={{
-                    background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
-                    borderRadius: '18px',
-                    padding: '18px 16px',
+                    background: s.gradient,
+                    borderRadius: '20px',
+                    padding: '20px 18px',
                     color: '#ffffff',
                     cursor: 'pointer',
-                    boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.35)',
+                    boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.32)',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    minHeight: '140px',
+                    minHeight: '148px',
                     border: 'none',
                     margin: 0,
+                    transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 14px 28px -4px rgba(37, 99, 235, 0.45)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px -4px rgba(37, 99, 235, 0.32)';
                   }}
                 >
-                  <div style={{ fontWeight: 800, fontSize: '0.98rem', lineHeight: 1.25, maxWidth: '90%' }}>
-                    {s.title}
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '1.08rem', lineHeight: 1.25, marginBottom: '4px' }}>
+                      {s.title}
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: '#dbeafe', fontWeight: 500 }}>
+                      {s.subtitle}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                    {s.icon}
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '14px' }}>
+                    <div style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }}>
+                      {s.icon}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Section: Other Services */}
-          <div style={{ marginBottom: '28px' }}>
+          {/* ================= SECTION: OTHER SERVICES ================= */}
+          <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '18px' }}>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1e293b' }}>
+              <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', fontFamily: 'Outfit' }}>
                 Other services
               </h3>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+              <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
-              {[
-                { title: 'Resale value', icon: '💰', action: () => alert('Vehicle Valuation: Market appraisal based on city, year, and condition.') },
-                { title: 'RTO office', icon: '🏢', action: () => alert('Find RTO Office: Timings, forms, and jurisdiction directory.') },
-                { title: 'Traffic rules & penalty', icon: '🚦', action: () => alert('Traffic Violations & Penalties under Motor Vehicles Act.') },
-              ].map((item, i) => (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+              {otherServices.map((item, i) => (
                 <div
                   key={i}
                   onClick={item.action}
-                  className="white-card"
                   style={{
-                    background: '#f8fafc',
-                    borderRadius: '16px',
+                    background: '#ffffff',
+                    borderRadius: '18px',
                     border: '1.5px solid #e2e8f0',
-                    padding: '20px 14px',
+                    padding: '22px 18px',
                     textAlign: 'center',
                     cursor: 'pointer',
-                    margin: 0,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
+                    transition: 'transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.borderColor = '#93c5fd';
+                    e.currentTarget.style.boxShadow = '0 10px 24px -4px rgba(37, 99, 235, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.03)';
                   }}
                 >
-                  <div style={{ fontSize: '2.2rem', marginBottom: '8px' }}>{item.icon}</div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.25 }}>{item.title}</div>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{item.icon}</div>
+                  <div style={{ fontSize: '1.02rem', fontWeight: 800, color: '#0f172a', marginBottom: '4px', fontFamily: 'Outfit' }}>
+                    {item.title}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#2563eb', fontWeight: 700, marginBottom: '6px' }}>
+                    {item.tag}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.35 }}>
+                    {item.desc}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Section: Get Car Service Report Banner (matching Screenshot 5) */}
-          <div style={{ marginBottom: '28px' }}>
+          {/* ================= SECTION: GET CAR SERVICE REPORT BANNER ================= */}
+          <div style={{ marginBottom: '32px' }}>
             <div
               style={{
-                background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 70%, #38bdf8 100%)',
+                background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 70%, #0284c7 100%)',
                 color: '#ffffff',
-                borderRadius: '20px',
-                padding: '22px 28px',
+                borderRadius: '22px',
+                padding: '24px 30px',
                 position: 'relative',
                 overflow: 'hidden',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 flexWrap: 'wrap',
-                gap: '16px',
-                boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.3)',
+                gap: '18px',
+                boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.35)',
               }}
             >
               <div>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '1.35rem', fontWeight: 800 }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 900, fontFamily: 'Outfit' }}>
                   Get car service report
                 </h4>
-                <div style={{ display: 'flex', gap: '16px', fontSize: '0.82rem', color: '#dbeafe', flexWrap: 'wrap' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <IonIcon icon={checkmarkCircle} style={{ color: '#60a5fa', fontSize: '1.1rem' }} /> Kilometer reading
+                <div style={{ display: 'flex', gap: '18px', fontSize: '0.84rem', color: '#dbeafe', flexWrap: 'wrap' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <IonIcon icon={checkmarkCircle} style={{ color: '#86efac', fontSize: '1.15rem' }} /> Kilometer reading
                   </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <IonIcon icon={checkmarkCircle} style={{ color: '#60a5fa', fontSize: '1.1rem' }} /> Accident history
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <IonIcon icon={checkmarkCircle} style={{ color: '#86efac', fontSize: '1.15rem' }} /> Accident history
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <IonIcon icon={checkmarkCircle} style={{ color: '#86efac', fontSize: '1.15rem' }} /> Insurance validity
                   </span>
                 </div>
               </div>
+
               <button
-                onClick={() => alert('Vehicle Inspection Report: Downloaded successfully.')}
+                onClick={() => navigate('/rc-search')}
                 style={{
                   background: '#ffffff',
-                  color: '#1d4ed8',
+                  color: '#1e40af',
                   border: 'none',
                   borderRadius: '24px',
-                  padding: '10px 24px',
+                  padding: '11px 26px',
                   fontWeight: 800,
-                  fontSize: '0.88rem',
+                  fontSize: '0.92rem',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
                   transition: 'transform 0.15s ease',
+                  whiteSpace: 'nowrap',
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.03)')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
               >
                 Get report
               </button>
             </div>
           </div>
 
-          {/* Section: Cars Categories (matching Screenshot 5) */}
-          <div style={{ marginBottom: '28px' }}>
+          {/* ================= SECTION: CARS ================= */}
+          <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '18px' }}>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-              <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#1e293b' }}>
+              <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
+              <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', fontFamily: 'Outfit' }}>
                 Cars
               </h4>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+              <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '16px 10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px 12px' }}>
               {carServices.map((c, i) => (
-                <div key={i} className="feature-item" onClick={c.action}>
-                  <div className="feature-icon-circle">
-                    <span style={{ fontSize: '1.6rem' }}>{c.icon}</span>
+                <div
+                  key={i}
+                  className="feature-item"
+                  onClick={c.action}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    padding: '16px 10px',
+                    border: '1.5px solid #e2e8f0',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                    transition: 'transform 0.15s ease, border-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.borderColor = '#93c5fd';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '52px',
+                      height: '52px',
+                      borderRadius: '50%',
+                      background: '#f1f5f9',
+                      margin: '0 auto 10px auto',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.75rem' }}>{c.icon}</span>
                   </div>
-                  <span className="feature-label">{c.title}</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', lineHeight: 1.25 }}>
+                    {c.title}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Section: Two Wheelers Categories (matching Screenshot 5) */}
-          <div style={{ marginBottom: '28px' }}>
+          {/* ================= SECTION: TWO WHEELERS ================= */}
+          <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '18px' }}>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-              <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#1e293b' }}>
+              <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
+              <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', fontFamily: 'Outfit' }}>
                 Two wheelers
               </h4>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+              <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px 10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px 12px' }}>
               {bikeServices.map((b, i) => (
-                <div key={i} className="feature-item" onClick={b.action}>
-                  <div className="feature-icon-circle">
-                    <span style={{ fontSize: '1.6rem' }}>{b.icon}</span>
+                <div
+                  key={i}
+                  className="feature-item"
+                  onClick={b.action}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    padding: '16px 10px',
+                    border: '1.5px solid #e2e8f0',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                    transition: 'transform 0.15s ease, border-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.borderColor = '#93c5fd';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '52px',
+                      height: '52px',
+                      borderRadius: '50%',
+                      background: '#f1f5f9',
+                      margin: '0 auto 10px auto',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.75rem' }}>{b.icon}</span>
                   </div>
-                  <span className="feature-label">{b.title}</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', lineHeight: 1.25 }}>
+                    {b.title}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
-
-          {/* Bottom Branding (matching Screenshot 5) */}
-          <div style={{ textAlign: 'center', padding: '24px 18px', background: '#f8fafc', borderTop: '1px solid #f1f5f9' }}>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, letterSpacing: '0.05em' }}>
+          {/* ================= BOTTOM BRANDING ================= */}
+          <div style={{ textAlign: 'center', padding: '28px 18px', background: '#ffffff', borderRadius: '16px', border: '1px solid #f1f5f9', marginBottom: '24px' }}>
+            <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, letterSpacing: '0.05em' }}>
               Vehicle Info
             </div>
-            <h3 style={{ margin: '4px 0 12px 0', fontSize: '1.3rem', fontWeight: 900, color: '#94a3b8', letterSpacing: '0.02em', fontFamily: 'Outfit' }}>
+            <h3 style={{ margin: '4px 0 12px 0', fontSize: '1.35rem', fontWeight: 900, color: '#94a3b8', letterSpacing: '0.02em', fontFamily: 'Outfit' }}>
               ALL-IN-ONE<br />VEHICLE SOLUTION
             </h3>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -303,6 +508,7 @@ export const ServicesTab: React.FC = () => {
         {/* Official Footer */}
         <Footer />
 
+        {/* ================= INTERACTIVE MODALS ================= */}
         {/* Practice Driving Exam Simulator Modal */}
         <RtoExamModal
           isOpen={showExamModal}
@@ -314,6 +520,24 @@ export const ServicesTab: React.FC = () => {
           isOpen={showChallanModal}
           onClose={() => setShowChallanModal(false)}
           regNo="MH01AE8055"
+        />
+
+        {/* RTO Office Directory & Forms Modal */}
+        <RtoOfficeModal
+          isOpen={showRtoOfficeModal}
+          onClose={() => setShowRtoOfficeModal(false)}
+        />
+
+        {/* Resale Value Calculator Modal */}
+        <ResaleValueModal
+          isOpen={showResaleModal}
+          onClose={() => setShowResaleModal(false)}
+        />
+
+        {/* Traffic Rules & Penalties Directory Modal */}
+        <TrafficRulesModal
+          isOpen={showRulesModal}
+          onClose={() => setShowRulesModal(false)}
         />
       </IonContent>
     </IonPage>

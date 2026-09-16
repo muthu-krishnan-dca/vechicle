@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   IonPage,
   IonContent,
@@ -49,8 +50,114 @@ interface PartInput {
   amount: number;
 }
 
+interface ClaimAccidentScenario {
+  id: string;
+  name: string;
+  badge: string;
+  description: string;
+  totalRepair: number;
+  plasticAmount: number;
+  rubberAmount: number;
+  glassAmount: number;
+  metalAmount: number;
+  fibreAmount: number;
+  labourAmount: number;
+  suggestedParts: { name: string; category: 'PLASTIC' | 'RUBBER' | 'GLASS' | 'FIBRE' | 'METAL'; amount: number }[];
+}
+
+const CLAIM_ACCIDENT_SCENARIOS: ClaimAccidentScenario[] = [
+  {
+    id: 'minor',
+    name: 'Minor Fender Scrape & Scratch',
+    badge: '🟢 Minor Impact',
+    description: 'Front mudguard scrape, broken rear-view mirror, minor bumper dent.',
+    totalRepair: 7500,
+    plasticAmount: 3200,
+    rubberAmount: 800,
+    glassAmount: 500,
+    metalAmount: 1500,
+    fibreAmount: 0,
+    labourAmount: 1500,
+    suggestedParts: [
+      { name: 'Front Mudguard & Cowl (Plastic)', category: 'PLASTIC', amount: 3200 },
+      { name: 'Rear View Mirror (Glass)', category: 'GLASS', amount: 500 },
+      { name: 'Front Lever & Grip (Metal)', category: 'METAL', amount: 1500 },
+      { name: 'Fork Bush & Rubber O-Rings', category: 'RUBBER', amount: 800 },
+    ],
+  },
+  {
+    id: 'moderate',
+    name: 'Frontal Collision',
+    badge: '🟡 Moderate Impact',
+    description: 'Cracked headlamp, damaged cowl, front mudguard, radiator grill, handlebar bent.',
+    totalRepair: 26000,
+    plasticAmount: 10000,
+    rubberAmount: 3000,
+    glassAmount: 3500,
+    metalAmount: 5500,
+    fibreAmount: 1000,
+    labourAmount: 3000,
+    suggestedParts: [
+      { name: 'Front Headlamp & Visor (Glass)', category: 'GLASS', amount: 3500 },
+      { name: 'Front Cowl & Mudguard Assembly (Plastic)', category: 'PLASTIC', amount: 10000 },
+      { name: 'Handlebar & Shock Absorber Rods (Metal)', category: 'METAL', amount: 5500 },
+      { name: 'Front Tyres & Hydraulic Hoses (Rubber)', category: 'RUBBER', amount: 3000 },
+      { name: 'Side Fairing Cowling (Fibre Glass)', category: 'FIBRE', amount: 1000 },
+    ],
+  },
+  {
+    id: 'major',
+    name: 'Major Crash & Side Impact',
+    badge: '🟠 Major Collision',
+    description: 'Shattered fairing, fuel tank dent, suspension fork damage, alloy wheel, exhaust bend.',
+    totalRepair: 64000,
+    plasticAmount: 22000,
+    rubberAmount: 6000,
+    glassAmount: 4000,
+    metalAmount: 20000,
+    fibreAmount: 4000,
+    labourAmount: 8000,
+    suggestedParts: [
+      { name: 'Full Instrument Cluster & Headlamp (Glass)', category: 'GLASS', amount: 4000 },
+      { name: 'Complete Body Shell & Panels (Plastic)', category: 'PLASTIC', amount: 22000 },
+      { name: 'Fuel Tank, Alloy Rim & Chassis Frame (Metal)', category: 'METAL', amount: 20000 },
+      { name: 'Dual Tyres, Tubes & Dampers (Rubber)', category: 'RUBBER', amount: 6000 },
+      { name: 'Side Engine Fairings (Fibre)', category: 'FIBRE', amount: 4000 },
+    ],
+  },
+  {
+    id: 'severe',
+    name: 'Severe Overturn & Structural Loss',
+    badge: '🔴 Severe Structural',
+    description: 'Chassis distortion, windshield, engine casing guard, full panel replacement, suspension.',
+    totalRepair: 135000,
+    plasticAmount: 45000,
+    rubberAmount: 15000,
+    glassAmount: 12000,
+    metalAmount: 42000,
+    fibreAmount: 6000,
+    labourAmount: 15000,
+    suggestedParts: [
+      { name: 'Windshield, Mirrors & Headlamp Units (Glass)', category: 'GLASS', amount: 12000 },
+      { name: 'Complete Exterior Body Panels (Plastic)', category: 'PLASTIC', amount: 45000 },
+      { name: 'Engine Crankcase, Front Axle & Subframe (Metal)', category: 'METAL', amount: 42000 },
+      { name: 'Suspension Bushes, Mounts & Tubeless Tyres (Rubber)', category: 'RUBBER', amount: 15000 },
+      { name: 'Underbody Aerodynamic Guard (Fibre)', category: 'FIBRE', amount: 6000 },
+    ],
+  },
+];
+
 export const ClaimInsurancePage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'insured' | 'workshop' | 'surveyor'>('insured');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'estimator' | 'insured' | 'workshop' | 'surveyor'>('estimator');
+
+  // Accident Claim Estimator Interactive State
+  const [estScenarioId, setEstScenarioId] = useState<string>('moderate');
+  const [estVehicleType, setEstVehicleType] = useState<'2W' | '4W'>('2W');
+  const [estVehicleAge, setEstVehicleAge] = useState<number>(2);
+  const [estCustomBill, setEstCustomBill] = useState<number>(26000);
+  const [estIsCustom, setEstIsCustom] = useState<boolean>(false);
+  const [showEstimateBanner, setShowEstimateBanner] = useState<boolean>(false);
 
   // Input states
   const [plateInput, setPlateInput] = useState('TN69BS3112');
@@ -438,8 +545,53 @@ export const ClaimInsurancePage: React.FC = () => {
           </div>
         </section>
 
+        {/* Special Claim Offers Banner ("athula offer") */}
+        <div style={{ maxWidth: '1200px', margin: '-16px auto 20px', padding: '0 20px', position: 'relative', zIndex: 10 }}>
+          <div
+            style={{
+              background: 'linear-gradient(90deg, #ffffff 0%, #fffdf0 50%, #fef9c3 100%)',
+              border: '1.5px solid #fde047',
+              borderRadius: '16px',
+              padding: '16px 22px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '14px',
+              boxShadow: '0 6px 20px rgba(202, 138, 4, 0.1)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '1.8rem' }}>🎁</span>
+              <div>
+                <span style={{ color: '#b45309', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  SPECIAL ACCIDENT CLAIM OFFERS & CASHLESS PERKS
+                </span>
+                <div style={{ fontSize: '1.02rem', fontWeight: 800, color: '#0f172a' }}>
+                  Free Emergency Towing up to 50 KM + 30-Min Self-Survey Approval
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#15803d', fontWeight: 700, background: '#dcfce7', padding: '5px 12px', borderRadius: '20px' }}>
+                <span>✓</span>
+                <span>₹0 Cashless Advance</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#1d4ed8', fontWeight: 700, background: '#eff6ff', padding: '5px 12px', borderRadius: '20px' }}>
+                <span>✓</span>
+                <span>4,800+ Garages</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#854d0e', fontWeight: 700, background: '#fef3c7', padding: '5px 12px', borderRadius: '20px' }}>
+                <span>✓</span>
+                <span>6-Month Repair Warranty</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Multi-Stakeholder Tabs Navigation */}
-        <div style={{ maxWidth: '1200px', margin: '-20px auto 24px', padding: '0 20px', position: 'relative', zIndex: 10 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto 24px', padding: '0 20px', position: 'relative', zIndex: 10 }}>
           <div
             style={{
               background: '#ffffff',
@@ -448,20 +600,57 @@ export const ClaimInsurancePage: React.FC = () => {
               boxShadow: '0 10px 25px rgba(0, 0, 0, 0.06)',
               border: '1px solid #e2e8f0',
               display: 'flex',
+              flexWrap: 'wrap',
               gap: '6px',
             }}
           >
+            {/* TAB 0: ACCIDENT CLAIM ESTIMATOR */}
+            <button
+              onClick={() => setActiveTab('estimator')}
+              style={{
+                flex: '1 1 200px',
+                padding: '12px 14px',
+                borderRadius: '12px',
+                border: 'none',
+                background: activeTab === 'estimator' ? '#2563eb' : 'transparent',
+                color: activeTab === 'estimator' ? '#ffffff' : '#475569',
+                fontWeight: 700,
+                fontSize: '0.92rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span style={{ fontSize: '1.2rem' }}>💥</span>
+              <span>Accident Claim Estimator</span>
+              <span
+                style={{
+                  background: activeTab === 'estimator' ? 'rgba(255,255,255,0.25)' : '#fef08a',
+                  color: activeTab === 'estimator' ? '#ffffff' : '#854d0e',
+                  fontSize: '0.68rem',
+                  padding: '2px 7px',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                }}
+              >
+                QUICK
+              </span>
+            </button>
+
             <button
               onClick={() => setActiveTab('insured')}
               style={{
-                flex: 1,
-                padding: '12px 16px',
+                flex: '1 1 180px',
+                padding: '12px 14px',
                 borderRadius: '12px',
                 border: 'none',
                 background: activeTab === 'insured' ? '#2563eb' : 'transparent',
                 color: activeTab === 'insured' ? '#ffffff' : '#475569',
                 fontWeight: 700,
-                fontSize: '0.95rem',
+                fontSize: '0.92rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -471,20 +660,20 @@ export const ClaimInsurancePage: React.FC = () => {
               }}
             >
               <IonIcon icon={personCircleOutline} style={{ fontSize: '1.2rem' }} />
-              <span>1. Insured / Policyholder</span>
+              <span>1. Insured Form</span>
             </button>
 
             <button
               onClick={() => setActiveTab('workshop')}
               style={{
-                flex: 1,
-                padding: '12px 16px',
+                flex: '1 1 180px',
+                padding: '12px 14px',
                 borderRadius: '12px',
                 border: 'none',
                 background: activeTab === 'workshop' ? '#2563eb' : 'transparent',
                 color: activeTab === 'workshop' ? '#ffffff' : '#475569',
                 fontWeight: 700,
-                fontSize: '0.95rem',
+                fontSize: '0.92rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -494,7 +683,7 @@ export const ClaimInsurancePage: React.FC = () => {
               }}
             >
               <IonIcon icon={buildOutline} style={{ fontSize: '1.2rem' }} />
-              <span>2. Authorized Workshop / Dealer</span>
+              <span>2. Workshop Estimate</span>
             </button>
 
             <button
@@ -503,14 +692,14 @@ export const ClaimInsurancePage: React.FC = () => {
                 loadAllClaims();
               }}
               style={{
-                flex: 1,
-                padding: '12px 16px',
+                flex: '1 1 180px',
+                padding: '12px 14px',
                 borderRadius: '12px',
                 border: 'none',
                 background: activeTab === 'surveyor' ? '#2563eb' : 'transparent',
                 color: activeTab === 'surveyor' ? '#ffffff' : '#475569',
                 fontWeight: 700,
-                fontSize: '0.95rem',
+                fontSize: '0.92rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -520,7 +709,7 @@ export const ClaimInsurancePage: React.FC = () => {
               }}
             >
               <IonIcon icon={businessOutline} style={{ fontSize: '1.2rem' }} />
-              <span>3. Insurer & Surveyor Desk</span>
+              <span>3. Surveyor Desk</span>
               {claimsList.length > 0 && (
                 <span
                   style={{
@@ -541,9 +730,490 @@ export const ClaimInsurancePage: React.FC = () => {
 
         {/* Main Workspace Body */}
         <div style={{ maxWidth: '1200px', margin: '0 auto 60px', padding: '0 20px' }}>
+          {/* TAB 0: INTERACTIVE ACCIDENT CLAIM PAYOUT ESTIMATOR */}
+          {activeTab === 'estimator' && (() => {
+            const activeSc = CLAIM_ACCIDENT_SCENARIOS.find((s) => s.id === estScenarioId) || CLAIM_ACCIDENT_SCENARIOS[1];
+            const totalEstBill = estIsCustom ? estCustomBill : activeSc.totalRepair;
+            const ratio = estIsCustom && activeSc.totalRepair > 0 ? estCustomBill / activeSc.totalRepair : 1;
+
+            const plasticVal = Math.round(activeSc.plasticAmount * ratio);
+            const rubberVal = Math.round(activeSc.rubberAmount * ratio);
+            const glassVal = Math.round(activeSc.glassAmount * ratio);
+            const fibreVal = Math.round(activeSc.fibreAmount * ratio);
+            const metalVal = Math.round(activeSc.metalAmount * ratio);
+
+            // Metal depreciation by age
+            const getMetalPct = (age: number) => {
+              if (age <= 0.5) return 0;
+              if (age <= 1) return 5;
+              if (age <= 2) return 10;
+              if (age <= 3) return 15;
+              if (age <= 4) return 25;
+              if (age <= 5) return 35;
+              return 40;
+            };
+            const metalPct = getMetalPct(estVehicleAge);
+            const excessVal = estVehicleType === '2W' ? 100 : 1000;
+
+            // Standard Comprehensive Calculation
+            const plasticDep = Math.round(plasticVal * 0.5);
+            const rubberDep = Math.round(rubberVal * 0.5);
+            const fibreDep = Math.round(fibreVal * 0.3);
+            const metalDep = Math.round((metalVal * metalPct) / 100);
+            const totalDepStandard = plasticDep + rubberDep + fibreDep + metalDep;
+
+            const approvedStandard = Math.max(0, totalEstBill - totalDepStandard - excessVal);
+            const customerShareStandard = Math.max(0, totalEstBill - approvedStandard);
+
+            // Zero-Dep Calculation
+            const approvedZeroDep = Math.max(0, totalEstBill - excessVal);
+            const customerShareZeroDep = excessVal;
+            const zeroDepSavings = approvedZeroDep - approvedStandard;
+
+            const handleApplyEstimateToClaim = () => {
+              // Convert scenario parts to PartInput format
+              const newParts: PartInput[] = activeSc.suggestedParts.map((p, idx) => ({
+                id: String(Date.now() + idx),
+                name: p.name,
+                category: p.category,
+                amount: Math.round(p.amount * ratio),
+              }));
+              setParts(newParts);
+              setLabourAmount(Math.round(activeSc.labourAmount * ratio));
+              setShowEstimateBanner(true);
+              setActiveTab('insured');
+              if (vehicle) {
+                runLiveCalculation(plateInput, vehicle);
+              }
+              try {
+                confetti({
+                  particleCount: 75,
+                  spread: 60,
+                  origin: { y: 0.5 },
+                  colors: ['#2563eb', '#10b981', '#f59e0b'],
+                });
+              } catch (e) {}
+            };
+
+            return (
+              <div
+                style={{
+                  background: '#ffffff',
+                  borderRadius: '24px',
+                  padding: '30px',
+                  border: '1.5px solid #cbd5e1',
+                  boxShadow: '0 12px 35px rgba(0, 0, 0, 0.08)',
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px', marginBottom: '24px' }}>
+                  <div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#dc2626', fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                      <span>💥</span>
+                      <span>ACCIDENT CLAIM PAYOUT ESTIMATOR</span>
+                    </div>
+                    <h2 style={{ margin: '4px 0 6px', fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', fontFamily: 'Outfit, sans-serif' }}>
+                      Accident Aguna Insurance Claim Evolo Agum?
+                    </h2>
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.94rem', maxWidth: '780px' }}>
+                      Select an accident damage scenario or enter an estimated repair cost below. Compare approved payout under <strong>Standard Comprehensive</strong> vs <strong>Zero-Depreciation</strong> cover.
+                    </p>
+                  </div>
+
+                  {/* Vehicle Type Toggle */}
+                  <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '12px', padding: '4px', border: '1px solid #e2e8f0' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEstVehicleType('2W')}
+                      style={{
+                        background: estVehicleType === '2W' ? '#2563eb' : 'transparent',
+                        color: estVehicleType === '2W' ? '#ffffff' : '#475569',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span>🛵</span>
+                      <span>Bike (Excess ₹100)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEstVehicleType('4W')}
+                      style={{
+                        background: estVehicleType === '4W' ? '#2563eb' : 'transparent',
+                        color: estVehicleType === '4W' ? '#ffffff' : '#475569',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span>🚗</span>
+                      <span>Car (Excess ₹1,000)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Scenario Picker Grid */}
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '10px' }}>
+                    Choose Accident Severity Preset:
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                    {CLAIM_ACCIDENT_SCENARIOS.map((sc) => {
+                      const isSelected = !estIsCustom && estScenarioId === sc.id;
+                      return (
+                        <button
+                          key={sc.id}
+                          type="button"
+                          onClick={() => {
+                            setEstIsCustom(false);
+                            setEstScenarioId(sc.id);
+                            setEstCustomBill(sc.totalRepair);
+                          }}
+                          style={{
+                            background: isSelected ? '#eff6ff' : '#f8fafc',
+                            border: `1.5px solid ${isSelected ? '#2563eb' : '#e2e8f0'}`,
+                            borderRadius: '14px',
+                            padding: '14px',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: isSelected ? '#1d4ed8' : '#64748b' }}>
+                              {sc.badge}
+                            </span>
+                            <span style={{ fontSize: '0.98rem', fontWeight: 900, color: '#0f172a' }}>
+                              ₹{sc.totalRepair.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                            {sc.name}
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: '#64748b', lineHeight: 1.3 }}>
+                            {sc.description}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Slider for Repair Bill & Vehicle Age */}
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    borderRadius: '16px',
+                    padding: '18px 22px',
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '24px',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '26px',
+                  }}
+                >
+                  <div style={{ flex: '1 1 320px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>
+                        Accident Repair Bill Cost:
+                      </span>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#2563eb' }}>
+                        ₹{totalEstBill.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="3000"
+                      max="150000"
+                      step="1000"
+                      value={totalEstBill}
+                      onChange={(e) => {
+                        setEstIsCustom(true);
+                        setEstCustomBill(Number(e.target.value));
+                      }}
+                      style={{ width: '100%', accentColor: '#2563eb', cursor: 'pointer' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#64748b' }}>
+                      <span>₹3,000 (Scratch)</span>
+                      <span>₹75,000 (Major)</span>
+                      <span>₹1,50,000 (Crash)</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', display: 'block' }}>
+                        Vehicle Age:
+                      </span>
+                      <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                        Metal Dep: {metalPct}%
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[
+                        { age: 0.5, label: '<6m (0%)' },
+                        { age: 1, label: '1yr (5%)' },
+                        { age: 2, label: '2yr (10%)' },
+                        { age: 4, label: '4yr (25%)' },
+                        { age: 6, label: '>5yr (40%)' },
+                      ].map((item) => (
+                        <button
+                          key={item.age}
+                          type="button"
+                          onClick={() => setEstVehicleAge(item.age)}
+                          style={{
+                            background: estVehicleAge === item.age ? '#0f172a' : '#ffffff',
+                            color: estVehicleAge === item.age ? '#ffffff' : '#334155',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            padding: '5px 10px',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Side-by-side Payout Comparison */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                  {/* Standard Policy Card */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '18px',
+                      border: '1.5px solid #e2e8f0',
+                      padding: '24px',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: '6px', fontWeight: 800, fontSize: '0.78rem' }}>
+                        STANDARD POLICY
+                      </span>
+                      <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '0.8rem' }}>
+                        IRDAI Depreciation Deducted
+                      </span>
+                    </div>
+
+                    <h3 style={{ margin: '0 0 14px', fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                      With Standard Cover
+                    </h3>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px', fontSize: '0.86rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                        <span>Total Repair Bill:</span>
+                        <strong style={{ color: '#0f172a' }}>₹{totalEstBill.toLocaleString('en-IN')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#dc2626' }}>
+                        <span>Plastic & Rubber Dep (50% cut):</span>
+                        <strong>-₹{(plasticDep + rubberDep).toLocaleString('en-IN')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#dc2626' }}>
+                        <span>Fibre ({30}%) & Metal ({metalPct}%) cut:</span>
+                        <strong>-₹{(fibreDep + metalDep).toLocaleString('en-IN')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                        <span>Compulsory Deductible:</span>
+                        <strong style={{ color: '#dc2626' }}>-₹{excessVal.toLocaleString('en-IN')}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '14px', padding: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ color: '#991b1b', fontWeight: 700, fontSize: '0.88rem' }}>Insurer Payout:</span>
+                        <span style={{ color: '#b91c1c', fontWeight: 900, fontSize: '1.3rem' }}>
+                          ₹{approvedStandard.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed #fca5a5', paddingTop: '8px' }}>
+                        <span style={{ color: '#7f1d1d', fontWeight: 800, fontSize: '0.88rem' }}>YOU PAY FROM POCKET:</span>
+                        <span style={{ color: '#dc2626', fontWeight: 900, fontSize: '1.25rem' }}>
+                          ₹{customerShareStandard.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Zero-Depreciation Policy Card */}
+                  <div
+                    style={{
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%)',
+                      borderRadius: '18px',
+                      border: '2px solid #10b981',
+                      padding: '24px',
+                      boxShadow: '0 8px 24px rgba(16, 185, 129, 0.15)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: '6px', fontWeight: 800, fontSize: '0.78rem' }}>
+                        ZERO DEPRECIATION (BUMPER TO BUMPER)
+                      </span>
+                      <span style={{ color: '#059669', fontWeight: 800, fontSize: '0.8rem' }}>
+                        100% Parts Paid!
+                      </span>
+                    </div>
+
+                    <h3 style={{ margin: '0 0 14px', fontSize: '1.25rem', fontWeight: 800, color: '#065f46' }}>
+                      With Zero-Dep Cover
+                    </h3>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px', fontSize: '0.86rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                        <span>Total Repair Bill:</span>
+                        <strong style={{ color: '#0f172a' }}>₹{totalEstBill.toLocaleString('en-IN')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669' }}>
+                        <span>Plastic, Rubber & Fibre Dep:</span>
+                        <strong>₹0 (100% Covered!)</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669' }}>
+                        <span>Metal Parts Depreciation:</span>
+                        <strong>₹0 (100% Covered!)</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                        <span>Compulsory Deductible:</span>
+                        <strong style={{ color: '#dc2626' }}>-₹{excessVal.toLocaleString('en-IN')}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#ecfdf5', border: '1.5px solid #6ee7b7', borderRadius: '14px', padding: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ color: '#065f46', fontWeight: 700, fontSize: '0.88rem' }}>Insurer Payout:</span>
+                        <span style={{ color: '#059669', fontWeight: 900, fontSize: '1.3rem' }}>
+                          ₹{approvedZeroDep.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed #a7f3d0', paddingTop: '8px' }}>
+                        <span style={{ color: '#047857', fontWeight: 800, fontSize: '0.88rem' }}>YOU PAY FROM POCKET:</span>
+                        <span style={{ color: '#065f46', fontWeight: 900, fontSize: '1.25rem' }}>
+                          ₹{customerShareZeroDep.toLocaleString('en-IN')} (Only Excess)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Action Card */}
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                  }}
+                >
+                  <div>
+                    <h4 style={{ margin: '0 0 4px', fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                      Ready to file your claim for {vehicle?.registration_number || plateInput}?
+                    </h4>
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.86rem' }}>
+                      You save ₹{zeroDepSavings.toLocaleString('en-IN')} with Zero-Dep. You can load this exact estimate into the Insured claim form with one click.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={handleApplyEstimateToClaim}
+                      style={{
+                        background: '#2563eb',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '12px 22px',
+                        fontSize: '0.92rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                      }}
+                    >
+                      <span>Apply & File Claim Form</span>
+                      <IonIcon icon={arrowForwardOutline} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate('/renewal-insurance')}
+                      style={{
+                        background: '#fef08a',
+                        color: '#854d0e',
+                        border: '1px solid #facc15',
+                        borderRadius: '12px',
+                        padding: '12px 18px',
+                        fontSize: '0.88rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Renew with Zero-Dep (85% OFF)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* TAB 1: INSURED / POLICYHOLDER CLAIM FILING & CALCULATION */}
           {activeTab === 'insured' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', alignItems: 'start' }}>
+            <div>
+              {showEstimateBanner && (
+                <div
+                  style={{
+                    background: '#f0fdf4',
+                    border: '1.5px solid #86efac',
+                    borderRadius: '14px',
+                    padding: '12px 18px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    color: '#15803d',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: '1.4rem', color: '#16a34a' }} />
+                    <span style={{ fontWeight: 700, fontSize: '0.92rem' }}>
+                      Estimate applied! Damaged parts and repair labour have been loaded into your claim form.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowEstimateBanner(false)}
+                    style={{ background: 'transparent', border: 'none', color: '#166534', cursor: 'pointer', fontWeight: 800, fontSize: '1rem' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', alignItems: 'start' }}>
               {/* Left Column: Form & Parts Entry */}
               <div>
                 {/* 1. Vehicle & Policy Lookup Card */}
@@ -1330,6 +2000,7 @@ export const ClaimInsurancePage: React.FC = () => {
                 </div>
               </div>
             </div>
+            </div>
           )}
 
           {/* TAB 2: DEALER & AUTHORIZED WORKSHOP PORTAL */}
@@ -1337,64 +2008,493 @@ export const ClaimInsurancePage: React.FC = () => {
             <div
               style={{
                 background: '#ffffff',
-                borderRadius: '16px',
+                borderRadius: '20px',
                 padding: '28px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-                border: '1px solid #e2e8f0',
+                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.06)',
+                border: '1.5px solid #cbd5e1',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <span style={{ fontSize: '1.6rem' }}>🔧</span>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a' }}>
-                    Dealer & Authorized Network Workshop Desk
-                  </h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-                    Authorized dealer showroom & repair workshop console. Create cashless job cards and damage estimation.
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '20px' }}>
-                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', fontWeight: 700, color: '#1e3a8a' }}>
-                    Cashless Repair Workflow
-                  </h4>
-                  <ol style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem', color: '#475569', lineHeight: 1.6 }}>
-                    <li>Vehicle arrival, physical inspection, and RC document verification.</li>
-                    <li>Digital estimation recording spare parts categories (Plastic, Metal, Glass, Fibre).</li>
-                    <li>Insurance surveyor digital spot inspection and fast-track approval.</li>
-                    <li>Upon repair completion, approved insurance amount is disbursed directly to workshop.</li>
-                    <li>Customer pays only standard compulsory excess and applicable material depreciation.</li>
-                  </ol>
-                </div>
-
-                <div style={{ background: '#eff6ff', padding: '20px', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', fontWeight: 700, color: '#1e40af' }}>
-                    Create Workshop Job Card
-                  </h4>
-                  <div style={{ fontSize: '0.85rem', color: '#334155', marginBottom: '12px' }}>
-                    Active Vehicle: <strong>{vehicle ? vehicle.registration_number : 'TN69BS3112'}</strong> ({vehicle?.maker_model})
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('insured')}
+              {/* Top Header & Fast Switch Controls */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
                     style={{
-                      background: '#2563eb',
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '12px',
+                      background: '#eff6ff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.6rem',
+                    }}
+                  >
+                    🔧
+                  </div>
+                  <div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#2563eb', fontWeight: 800, fontSize: '0.78rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      <span>AUTHORIZED NETWORK GARAGE CONSOLE</span>
+                    </div>
+                    <h3 style={{ margin: '2px 0', fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', fontFamily: 'Outfit' }}>
+                      Workshop Job Card & Digital Damage Estimator
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b' }}>
+                      Enter damaged spare parts, labour charges, and generate IRDAI cashless estimate for insurance surveyor.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Open Quick Accident Estimator Button (Option 2) */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('estimator')}
+                    style={{
+                      background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                       color: '#ffffff',
                       border: 'none',
                       padding: '10px 18px',
-                      borderRadius: '8px',
+                      borderRadius: '10px',
                       fontWeight: 700,
-                      fontSize: '0.85rem',
+                      fontSize: '0.86rem',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
                     }}
                   >
-                    <span>Open Repair Estimator</span>
+                    <span>💥 Open Accident Claim Estimator</span>
                     <IonIcon icon={arrowForwardOutline} />
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('insured')}
+                    style={{
+                      background: '#f1f5f9',
+                      color: '#334155',
+                      border: '1px solid #cbd5e1',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                      fontSize: '0.86rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Insured Form
+                  </button>
+                </div>
+              </div>
+
+              {/* Job Card Details Bar */}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  border: '1px solid #e2e8f0',
+                  marginBottom: '24px',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '16px',
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                    Job Card Number
+                  </label>
+                  <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
+                    JC-2026-8491
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                    Vehicle Inward
+                  </label>
+                  <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
+                    {vehicle?.registration_number || plateInput}
+                  </div>
+                  <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                    {vehicle?.maker_model || 'Yamaha FZ-S FI V4'}
+                  </span>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                    Service Advisor / Tech
+                  </label>
+                  <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
+                    M. Saravanan (Lead Tech)
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                    Cashless Network Status
+                  </label>
+                  <span style={{ background: '#dcfce7', color: '#15803d', padding: '3px 10px', borderRadius: '20px', fontWeight: 800, fontSize: '0.78rem', display: 'inline-block' }}>
+                    ✓ Pre-Approved Garage
+                  </span>
+                </div>
+              </div>
+
+              {/* Damaged Parts & Labour Entry Console (Option 3) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px', alignItems: 'start' }}>
+                {/* Left: Interactive Parts Entry & Table */}
+                <div>
+                  <div style={{ background: '#ffffff', borderRadius: '16px', border: '1.5px solid #e2e8f0', padding: '20px', marginBottom: '20px' }}>
+                    <h4 style={{ margin: '0 0 14px 0', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                      Add Replacement Spare Part
+                    </h4>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!newPartName.trim() || !newPartAmount || Number(newPartAmount) <= 0) return;
+                        const addedItem: PartInput = {
+                          id: String(Date.now()),
+                          name: newPartName.trim(),
+                          category: newPartCategory,
+                          amount: Number(newPartAmount),
+                        };
+                        const updatedParts = [...parts, addedItem];
+                        setParts(updatedParts);
+                        setNewPartName('');
+                        setNewPartAmount('');
+                        if (vehicle) runLiveCalculation(plateInput, vehicle);
+                      }}
+                      style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Spare Part Name (e.g. Front Visor, Fender)"
+                        value={newPartName}
+                        onChange={(e) => setNewPartName(e.target.value)}
+                        style={{
+                          flex: 2,
+                          minWidth: '180px',
+                          padding: '9px 12px',
+                          borderRadius: '8px',
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.86rem',
+                          outline: 'none',
+                        }}
+                      />
+
+                      <select
+                        value={newPartCategory}
+                        onChange={(e) => setNewPartCategory(e.target.value as any)}
+                        style={{
+                          flex: 1.2,
+                          minWidth: '140px',
+                          padding: '9px 10px',
+                          borderRadius: '8px',
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.82rem',
+                          background: '#ffffff',
+                          outline: 'none',
+                        }}
+                      >
+                        <option value="PLASTIC">Plastic (50% Dep)</option>
+                        <option value="RUBBER">Rubber (50% Dep)</option>
+                        <option value="GLASS">Glass (0% Dep)</option>
+                        <option value="FIBRE">Fibre (30% Dep)</option>
+                        <option value="METAL">Metal (Age scale)</option>
+                      </select>
+
+                      <input
+                        type="number"
+                        placeholder="Price (₹)"
+                        value={newPartAmount}
+                        onChange={(e) => setNewPartAmount(e.target.value ? Number(e.target.value) : '')}
+                        style={{
+                          width: '100px',
+                          padding: '9px 12px',
+                          borderRadius: '8px',
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.86rem',
+                          outline: 'none',
+                        }}
+                      />
+
+                      <button
+                        type="submit"
+                        style={{
+                          background: '#0f172a',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '9px 16px',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <IonIcon icon={addCircleOutline} />
+                        Add Part
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Damaged Parts Table */}
+                  <div style={{ background: '#ffffff', borderRadius: '16px', border: '1.5px solid #e2e8f0', padding: '20px', overflowX: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                        Job Card Parts Estimation Sheet ({parts.length} items)
+                      </h4>
+                    </div>
+
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0', color: '#475569', textAlign: 'left' }}>
+                          <th style={{ padding: '10px 12px' }}>#</th>
+                          <th style={{ padding: '10px 12px' }}>Description</th>
+                          <th style={{ padding: '10px 12px' }}>Material</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'right' }}>Cost</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'center' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parts.map((item, idx) => (
+                          <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '10px 12px', color: '#64748b' }}>{idx + 1}</td>
+                            <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>{item.name}</td>
+                            <td style={{ padding: '10px 12px' }}>
+                              <span
+                                style={{
+                                  background: item.category === 'GLASS' ? '#eff6ff' : item.category === 'PLASTIC' ? '#fef3c7' : '#f1f5f9',
+                                  color: item.category === 'GLASS' ? '#1d4ed8' : item.category === 'PLASTIC' ? '#b45309' : '#334155',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {item.category}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800 }}>
+                              ₹{item.amount.toLocaleString('en-IN')}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = parts.filter((p) => p.id !== item.id);
+                                  setParts(updated);
+                                  if (vehicle) runLiveCalculation(plateInput, vehicle);
+                                }}
+                                style={{ background: 'transparent', border: 'none', color: '#dc2626', cursor: 'pointer' }}
+                              >
+                                <IonIcon icon={trashOutline} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {/* Labour & Tinkering Cost Input */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: '16px',
+                        padding: '14px',
+                        background: '#f8fafc',
+                        borderRadius: '12px',
+                        border: '1px solid #e2e8f0',
+                      }}
+                    >
+                      <div>
+                        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.88rem', display: 'block' }}>
+                          Workshop Labour, Denting & Painting:
+                        </span>
+                        <span style={{ fontSize: '0.76rem', color: '#64748b' }}>
+                          Includes mechanical inspection, panel alignment, and oven-bake paint.
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 800, color: '#0f172a' }}>₹</span>
+                        <input
+                          type="number"
+                          value={labourAmount}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            setLabourAmount(val);
+                            if (vehicle) runLiveCalculation(plateInput, vehicle);
+                          }}
+                          style={{
+                            width: '110px',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #cbd5e1',
+                            fontSize: '0.92rem',
+                            fontWeight: 800,
+                            outline: 'none',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Real-time Workshop Invoice & Cashless Split Card */}
+                <div>
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '18px',
+                      border: '1.5px solid #e2e8f0',
+                      padding: '24px',
+                      boxShadow: '0 6px 20px rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <span style={{ background: '#f1f5f9', color: '#334155', padding: '4px 10px', borderRadius: '6px', fontWeight: 800, fontSize: '0.76rem' }}>
+                        WORKSHOP ESTIMATE SUMMARY
+                      </span>
+                      <span style={{ color: '#16a34a', fontWeight: 800, fontSize: '0.8rem' }}>
+                        Live Calculated
+                      </span>
+                    </div>
+
+                    {/* Breakdown */}
+                    {(() => {
+                      const totalSpares = parts.reduce((acc, p) => acc + p.amount, 0);
+                      const totalBill = totalSpares + labourAmount;
+                      const approvedInsurer = assessment ? assessment.final_settlement_amount : Math.max(0, totalBill - 4000);
+                      const customerPay = assessment ? assessment.customer_liability : Math.max(0, totalBill - approvedInsurer);
+
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', fontSize: '0.88rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                            <span>Total Spare Parts:</span>
+                            <strong style={{ color: '#0f172a' }}>₹{totalSpares.toLocaleString('en-IN')}</strong>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                            <span>Workshop Labour:</span>
+                            <strong style={{ color: '#0f172a' }}>₹{labourAmount.toLocaleString('en-IN')}</strong>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #f1f5f9', paddingTop: '8px', color: '#0f172a', fontWeight: 800 }}>
+                            <span>Gross Repair Bill:</span>
+                            <span>₹{totalBill.toLocaleString('en-IN')}</span>
+                          </div>
+
+                          {/* Cashless Payout Box */}
+                          <div
+                            style={{
+                              background: '#ecfdf5',
+                              border: '1.5px solid #86efac',
+                              borderRadius: '12px',
+                              padding: '14px',
+                              marginTop: '8px',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                              <span style={{ color: '#065f46', fontWeight: 800, fontSize: '0.84rem' }}>
+                                Direct Insurer Cashless:
+                              </span>
+                              <span style={{ color: '#059669', fontWeight: 900, fontSize: '1.25rem' }}>
+                                ₹{approvedInsurer.toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.74rem', color: '#047857' }}>
+                              Disbursed directly to workshop bank account upon surveyor signoff.
+                            </span>
+                          </div>
+
+                          {/* Customer Deductible Box */}
+                          <div
+                            style={{
+                              background: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <span style={{ color: '#475569', fontWeight: 700, fontSize: '0.82rem' }}>
+                              Customer Pay at Delivery:
+                            </span>
+                            <span style={{ color: '#dc2626', fontWeight: 900, fontSize: '1.1rem' }}>
+                              ₹{customerPay.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={handleSubmitClaim}
+                        disabled={submitting}
+                        style={{
+                          background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '10px',
+                          padding: '12px',
+                          fontWeight: 800,
+                          fontSize: '0.92rem',
+                          cursor: submitting ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                        }}
+                      >
+                        {submitting ? (
+                          <>
+                            <IonSpinner name="crescent" style={{ width: '18px', height: '18px', color: '#ffffff' }} />
+                            <span>Pushing to Surveyor...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Push Job Card to Surveyor Desk</span>
+                            <IonIcon icon={arrowForwardOutline} />
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDownloadPDF}
+                        disabled={!assessment}
+                        style={{
+                          background: '#f1f5f9',
+                          color: '#334155',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '10px',
+                          padding: '10px',
+                          fontWeight: 700,
+                          fontSize: '0.86rem',
+                          cursor: !assessment ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <IonIcon icon={downloadOutline} />
+                        <span>Download Workshop Job Card PDF</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

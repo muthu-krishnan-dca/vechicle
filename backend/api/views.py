@@ -7,6 +7,7 @@ from rest_framework import status
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
+from django.db.models import Q, Sum
 from .models import Vehicle, Challan, Policy, RTOQuestion, Claim
 from .serializers import (
     VehicleSerializer,
@@ -21,7 +22,13 @@ from .serializers import (
 )
 from .services import calculate_quotes, ADDON_DEFINITIONS
 from .rto_data import resolve_rto_office
-from .rc_service import fetch_original_vehicle_details, fetch_live_challans, sync_challans_to_db
+from .rc_service import (
+    fetch_original_vehicle_details,
+    fetch_live_challans,
+    sync_challans_to_db,
+    mask_string,
+    parse_date,
+)
 from .claim_service import evaluate_claim_assessment, parse_date_safe
 from .scraper_service import (
     create_echallan_session,
@@ -64,7 +71,22 @@ class VehicleRCView(APIView):
     POST /api/vehicle/ or PUT /api/vehicle/<reg_no>/
     Add or update original vehicle details directly.
     """
-    def get(self, request, reg_no):
+    def get(self, request, reg_no=None):
+        if not reg_no:
+            search = request.query_params.get('search', '').strip()
+            qs = Vehicle.objects.all()
+            if search:
+                clean_s = clean_reg_no(search)
+                qs = qs.filter(
+                    Q(registration_number__icontains=clean_s) |
+                    Q(owner_name__icontains=search) |
+                    Q(maker_model__icontains=search) |
+                    Q(rto_office__icontains=search)
+                )
+            vehicles = qs.order_by('-created_at')[:150]
+            serializer = VehicleSerializer(vehicles, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
         cleaned = clean_reg_no(reg_no)
         refresh = request.query_params.get('refresh', '').lower() == 'true'
 
@@ -100,6 +122,14 @@ class VehicleRCView(APIView):
         serializer = VehicleSerializer(vehicle)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def delete(self, request, reg_no):
+        cleaned = clean_reg_no(reg_no)
+        vehicle = Vehicle.objects.filter(registration_number=cleaned).first()
+        if not vehicle:
+            return Response({"error": f"Vehicle {cleaned} not found."}, status=status.HTTP_404_NOT_FOUND)
+        vehicle.delete()
+        return Response({"message": f"Vehicle {cleaned} deleted successfully."}, status=status.HTTP_200_OK)
+
     def post(self, request, reg_no=None):
         """Register or update genuine vehicle details manually."""
         return self._save_vehicle(request, reg_no)
@@ -116,25 +146,79 @@ class VehicleRCView(APIView):
             data['registration_number'] = clean_reg_no(data['registration_number'])
 
         reg = data.get('registration_number')
-        if not reg:
-            return Response({"error": "registration_number is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not reg or len(reg) < 4:
+            return Response({"error": "A valid registration_number plate is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         today = date.today()
+
+        def safe_parse_date(val, default):
+            if not val or not str(val).strip():
+                return default
+            try:
+                if isinstance(val, date):
+                    return val
+                return parse_date(str(val).strip())
+            except Exception:
+                return default
+
+        owner_name = (data.get('owner_name') or 'REGISTERED OWNER').strip().upper()
+        masked_owner = data.get('masked_owner')
+        if not masked_owner or not str(masked_owner).strip():
+            masked_owner = mask_string(owner_name)
+
+        try:
+            engine_cc = int(data.get('engine_capacity_cc') or 125)
+            if engine_cc <= 0:
+                engine_cc = 125
+        except (ValueError, TypeError):
+            engine_cc = 125
+
+        reg_date = safe_parse_date(data.get('registration_date'), today - timedelta(days=365))
+        fitness_date = safe_parse_date(data.get('fitness_upto'), today + timedelta(days=365 * 14))
+        ins_date = safe_parse_date(data.get('insurance_upto'), today + timedelta(days=180))
+        pucc_date = safe_parse_date(data.get('pucc_upto'), today + timedelta(days=90))
+
+        rto = (data.get('rto_office') or '').strip()
+        if not rto:
+            rto = resolve_rto_office(reg)
+
+        chassis = (data.get('chassis_number_masked') or '').strip()
+        if not chassis:
+            chassis = f"MD625{reg[:4] if len(reg) >= 4 else 'TN01'}8841"
+
+        engine = (data.get('engine_number_masked') or '').strip()
+        if not engine:
+            engine = f"JE35E{reg[-4:] if len(reg) >= 4 else '1234'}2190"
+
+        maker_model = (data.get('maker_model') or '').strip()
+        if not maker_model:
+            maker_model = 'Two Wheeler'
+
+        veh_class = (data.get('vehicle_class') or '').strip()
+        if not veh_class:
+            veh_class = 'M-Cycle/Scooter(2WN)'
+
+        fuel_type = (data.get('fuel_type') or 'PETROL').strip().upper()
+        if fuel_type not in ['PETROL', 'DIESEL', 'ELECTRIC', 'CNG', 'HYBRID']:
+            fuel_type = 'PETROL'
+
+        status_val = (data.get('status') or 'ACTIVE').strip().upper()
+
         defaults = {
-            'owner_name': data.get('owner_name', 'REGISTERED OWNER'),
-            'masked_owner': data.get('masked_owner') or data.get('owner_name', 'R***SH K***R'),
-            'maker_model': data.get('maker_model', 'Two Wheeler'),
-            'vehicle_class': data.get('vehicle_class', 'M-Cycle/Scooter(2WN)'),
-            'fuel_type': data.get('fuel_type', 'PETROL'),
-            'engine_capacity_cc': int(data.get('engine_capacity_cc', 125)),
-            'registration_date': data.get('registration_date', today - timedelta(days=365)),
-            'fitness_upto': data.get('fitness_upto', today + timedelta(days=365 * 14)),
-            'insurance_upto': data.get('insurance_upto', today + timedelta(days=180)),
-            'pucc_upto': data.get('pucc_upto', today + timedelta(days=90)),
-            'rto_office': data.get('rto_office') or resolve_rto_office(reg),
-            'chassis_number_masked': data.get('chassis_number_masked', 'MD625...8841'),
-            'engine_number_masked': data.get('engine_number_masked', 'JE35E...2190'),
-            'status': data.get('status', 'ACTIVE'),
+            'owner_name': owner_name,
+            'masked_owner': masked_owner,
+            'maker_model': maker_model,
+            'vehicle_class': veh_class,
+            'fuel_type': fuel_type,
+            'engine_capacity_cc': engine_cc,
+            'registration_date': reg_date,
+            'fitness_upto': fitness_date,
+            'insurance_upto': ins_date,
+            'pucc_upto': pucc_date,
+            'rto_office': rto,
+            'chassis_number_masked': chassis,
+            'engine_number_masked': engine,
+            'status': status_val,
         }
 
         vehicle, created = Vehicle.objects.update_or_create(
@@ -145,7 +229,7 @@ class VehicleRCView(APIView):
         serializer = VehicleSerializer(vehicle)
         return Response(
             {
-                "message": f"Original details for vehicle {reg} saved successfully.",
+                "message": f"Vehicle {reg} saved successfully to database.",
                 "created": created,
                 "vehicle": serializer.data
             },
@@ -644,4 +728,57 @@ class EChallanSearchView(APIView):
             return Response(result, status=status.HTTP_502_BAD_GATEWAY)
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+class AdminStatsView(APIView):
+    """
+    GET /api/admin/stats/
+    Returns aggregate stats for the Admin Dashboard.
+    """
+    def get(self, request):
+        total_vehicles = Vehicle.objects.count()
+        total_challans = Challan.objects.count()
+        pending_challans = Challan.objects.filter(status='PENDING').count()
+        paid_challans = Challan.objects.filter(status='PAID').count()
+        fines_pending = Challan.objects.filter(status='PENDING').aggregate(total=Sum('fine_amount'))['total'] or 0
+        fines_collected = Challan.objects.filter(status='PAID').aggregate(total=Sum('fine_amount'))['total'] or 0
+
+        total_policies = Policy.objects.count()
+        premiums_total = Policy.objects.aggregate(total=Sum('total_premium'))['total'] or 0
+
+        total_claims = Claim.objects.count()
+        pending_claims = Claim.objects.filter(status='PENDING').count()
+        approved_claims = Claim.objects.filter(status='APPROVED').count()
+        settled_claims = Claim.objects.filter(status='SETTLED').count()
+        rejected_claims = Claim.objects.filter(status='REJECTED').count()
+
+        total_questions = RTOQuestion.objects.count()
+
+        return Response({
+            "vehicles": {
+                "total": total_vehicles,
+            },
+            "challans": {
+                "total": total_challans,
+                "pending": pending_challans,
+                "paid": paid_challans,
+                "fines_pending": float(fines_pending),
+                "fines_collected": float(fines_collected),
+            },
+            "policies": {
+                "total": total_policies,
+                "total_premium": float(premiums_total),
+            },
+            "claims": {
+                "total": total_claims,
+                "pending": pending_claims,
+                "approved": approved_claims,
+                "settled": settled_claims,
+                "rejected": rejected_claims,
+            },
+            "rto_questions": total_questions,
+            "status": "OPERATIONAL",
+            "server_time": timezone.now().isoformat(),
+        }, status=status.HTTP_200_OK)
+
 

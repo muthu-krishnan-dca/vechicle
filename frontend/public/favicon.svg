@@ -1,0 +1,56 @@
+<svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="favShieldBg" x1="10" y1="5" x2="90" y2="95" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#0f172a" />
+      <stop offset="45%" stopColor="#1e293b" />
+      <stop offset="100%" stopColor="#090d16" />
+    </linearGradient>
+    <linearGradient id="favShieldRim" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#38bdf8" />
+      <stop offset="30%" stopColor="#94a3b8" />
+      <stop offset="70%" stopColor="#f59e0b" />
+      <stop offset="100%" stopColor="#10b981" />
+    </linearGradient>
+    <linearGradient id="favSaffron" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#FF9933" />
+      <stop offset="100%" stopColor="#FF5500" />
+    </linearGradient>
+    <linearGradient id="favGreen" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#10b981" />
+      <stop offset="100%" stopColor="#046A38" />
+    </linearGradient>
+    <linearGradient id="favCarGrad" x1="20" y1="40" x2="80" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#60a5fa" />
+      <stop offset="50%" stopColor="#2563eb" />
+      <stop offset="100%" stopColor="#1d4ed8" />
+    </linearGradient>
+  </defs>
+
+  <!-- 3D Beveled Shield Base -->
+  <path
+    d="M50 4 C74 4, 91 12, 93 28 C93 58, 72 82, 50 96 C28 82, 7 58, 7 28 C9 12, 26 4, 50 4 Z"
+    fill="url(#favShieldBg)"
+    stroke="url(#favShieldRim)"
+    strokeWidth="3.5"
+  />
+
+  <!-- Indian Flag Ribbons -->
+  <path d="M20 22 C 38 15, 62 15, 80 22 C 73 26, 60 21, 50 21 C 40 21, 27 26, 20 22 Z" fill="url(#favSaffron)" />
+  <path d="M26 27 C 40 23, 60 23, 74 27 C 68 29.5, 58 26.5, 50 26.5 C 42 26.5, 32 29.5, 26 27 Z" fill="#ffffff" />
+  <circle cx="50" cy="27" r="2" fill="#1e3a8a" />
+  <path d="M22 75 C 36 84, 64 84, 78 75 C 72 71, 60 76, 50 76 C 40 76, 28 71, 22 75 Z" fill="url(#favGreen)" />
+
+  <!-- Speed Car Body -->
+  <path
+    d="M19 60 C 20 56, 25 54, 32 54 C 37 46, 42 41, 50 41 C 58 41, 63 46, 68 54 C 75 54, 80 56, 81 60 C 82 64, 78 65.5, 75 65.5 L 25 65.5 C 22 65.5, 18 64, 19 60 Z"
+    fill="url(#favCarGrad)"
+    stroke="#93c5fd"
+    strokeWidth="1"
+  />
+  <!-- Windshield -->
+  <path d="M34 53 C 38 46, 43 43, 50 43 C 57 43, 62 46, 66 53 C 60 52, 40 52, 34 53 Z" fill="#ffffff" opacity="0.9" />
+
+  <!-- LED Laser Headlights -->
+  <polygon points="23,58 31,56 30,59 24,60" fill="#38bdf8" />
+  <polygon points="77,58 69,56 70,59 76,60" fill="#38bdf8" />
+</svg>

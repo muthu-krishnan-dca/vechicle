@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IonIcon } from '@ionic/react';
 import { chevronDownOutline } from 'ionicons/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { BrandLogo } from './BrandLogo';
 
 interface HeaderProps {
   currentCity?: string;
@@ -31,6 +32,24 @@ export const Header: React.FC<HeaderProps> = ({
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = (dropdownName: string) => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
+    setActiveDropdown(dropdownName);
+  };
+
+  const handleMouseLeave = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+    }
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+    }, 180);
+  };
 
   const cities = [
     'Chennai',
@@ -141,6 +160,10 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const navTo = (path: string) => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
     setActiveDropdown(null);
     navigate(path);
   };
@@ -150,11 +173,20 @@ export const Header: React.FC<HeaderProps> = ({
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.header-dropdown-container')) {
+        if (dropdownTimeoutRef.current) {
+          clearTimeout(dropdownTimeoutRef.current);
+          dropdownTimeoutRef.current = null;
+        }
         setActiveDropdown(null);
       }
     };
     document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      if (dropdownTimeoutRef.current) {
+        clearTimeout(dropdownTimeoutRef.current);
+      }
+    };
   }, []);
 
   return (
@@ -181,79 +213,12 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         >
           {/* Brand Logo & Tagline */}
-          <div
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+          <BrandLogo
+            size={44}
+            theme="light"
             onClick={() => navTo('/rc-search')}
-          >
-            {/* Tricolor Car Brand Emblem */}
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '10px',
-                border: '1.5px solid #e2e8f0',
-                background: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '3px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-              }}
-            >
-              <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
-                {/* Top Orange Band */}
-                <rect x="5" y="8" width="30" height="3.5" rx="1.75" fill="#FF7722" />
-                {/* Bottom Green Band */}
-                <rect x="5" y="28" width="30" height="3.5" rx="1.75" fill="#138808" />
-                {/* Car Outline */}
-                <path
-                  d="M10 23L13 14H27L30 23V26H10V23Z"
-                  fill="#2563eb"
-                />
-                <rect x="15" y="16" width="10" height="4" rx="1" fill="#ffffff" opacity="0.9" />
-                {/* Wheels */}
-                <circle cx="14" cy="26" r="3" fill="#1e293b" />
-                <circle cx="26" cy="26" r="3" fill="#1e293b" />
-                <circle cx="14" cy="26" r="1.2" fill="#ffffff" />
-                <circle cx="26" cy="26" r="1.2" fill="#ffffff" />
-              </svg>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
-                <span
-                  style={{
-                    fontSize: '1.35rem',
-                    fontWeight: 800,
-                    color: '#0f172a',
-                    fontFamily: 'Outfit, sans-serif',
-                    letterSpacing: '-0.02em',
-                    lineHeight: 1.1,
-                  }}
-                >
-                  Vehicle Info
-                </span>
-                {/* Blue Search Magnifier Icon dot */}
-                <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '2px' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="3">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                </span>
-              </div>
-              <span
-                style={{
-                  fontSize: '0.62rem',
-                  fontWeight: 700,
-                  color: '#2563eb',
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                ALL-IN-ONE VEHICLE SOLUTION
-              </span>
-            </div>
-          </div>
+            className="brand-logo-header"
+          />
 
           {/* Desktop Navigation Links in Sleek Oval / Capsule shape */}
           <nav
@@ -272,6 +237,10 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Home */}
             <button
               onClick={() => navTo('/home')}
+              onMouseEnter={() => {
+                if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+                setActiveDropdown(null);
+              }}
               style={{
                 background: location.pathname === '/home' ? '#2563eb' : 'transparent',
                 border: 'none',
@@ -288,151 +257,13 @@ export const Header: React.FC<HeaderProps> = ({
               Home
             </button>
 
-            {/* Insurance Dropdown */}
-            <div className="header-dropdown-container" style={{ position: 'relative' }}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveDropdown(activeDropdown === 'insurance' ? null : 'insurance');
-                }}
-                style={{
-                  background: (location.pathname.includes('insurance') && location.pathname !== '/claim-insurance') ? '#2563eb' : 'transparent',
-                  border: 'none',
-                  color: (location.pathname.includes('insurance') && location.pathname !== '/claim-insurance') ? '#ffffff' : '#334155',
-                  fontSize: '0.92rem',
-                  fontWeight: 700,
-                  padding: '7px 18px',
-                  borderRadius: '9999px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'all 0.2s ease',
-                  boxShadow: (location.pathname.includes('insurance') && location.pathname !== '/claim-insurance') ? '0 4px 12px rgba(37, 99, 235, 0.28)' : 'none',
-                }}
-              >
-                <span>Insurance</span>
-                <IonIcon
-                  icon={chevronDownOutline}
-                  style={{
-                    fontSize: '0.8rem',
-                    transform: activeDropdown === 'insurance' ? 'rotate(180deg)' : 'none',
-                    transition: 'transform 0.2s',
-                  }}
-                />
-              </button>
-
-              {activeDropdown === 'insurance' && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 8px)',
-                    left: 0,
-                    background: '#ffffff',
-                    borderRadius: '14px',
-                    boxShadow: '0 12px 30px rgba(0, 0, 0, 0.12)',
-                    border: '1px solid #e2e8f0',
-                    minWidth: '200px',
-                    padding: '8px',
-                    zIndex: 1000,
-                  }}
-                >
-                  <button
-                    onClick={() => navTo('/car-insurance')}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: location.pathname === '/car-insurance' ? '#f0f7ff' : 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>🚗</span>
-                    <span>Car Insurance</span>
-                  </button>
-
-                  <button
-                    onClick={() => navTo('/check-insurance')}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: location.pathname === '/check-insurance' ? '#f0f7ff' : 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: location.pathname === '/check-insurance' ? '#2563eb' : '#1e293b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>🛡️</span>
-                    <span>Check Insurance Status</span>
-                  </button>
-
-
-                  <button
-                    onClick={() => navTo('/bike-insurance')}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: location.pathname === '/bike-insurance' ? '#f0f7ff' : 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>🛵</span>
-                    <span>Bike Insurance</span>
-                  </button>
-
-                  <button
-                    onClick={() => navTo('/insurance')}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      fontWeight: 500,
-                      color: '#2563eb',
-                      cursor: 'pointer',
-                      borderTop: '1px solid #f1f5f9',
-                      marginTop: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <span>⚡ Compare All Quotes</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Insurance Claim (Separate Nav Bar Heading) */}
+              {/* Insurance Claim (Separate Nav Bar Heading) */}
             <button
               onClick={() => navTo('/claim-insurance')}
+              onMouseEnter={() => {
+                if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+                setActiveDropdown(null);
+              }}
               style={{
                 background: location.pathname === '/claim-insurance' ? '#2563eb' : 'transparent',
                 border: 'none',
@@ -452,8 +283,233 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Insurance Claim</span>
             </button>
 
+            {/* Renewal Insurance with Glowing Offers Badge */}
+            <button
+              onClick={() => navTo('/renewal-insurance')}
+              onMouseEnter={() => {
+                if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+                setActiveDropdown(null);
+              }}
+              style={{
+                background: location.pathname === '/renewal-insurance' ? '#2563eb' : 'transparent',
+                border: 'none',
+                color: location.pathname === '/renewal-insurance' ? '#ffffff' : '#334155',
+                fontSize: '0.92rem',
+                fontWeight: 700,
+                padding: '7px 16px',
+                borderRadius: '9999px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: location.pathname === '/renewal-insurance' ? '0 4px 12px rgba(37, 99, 235, 0.28)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>Renewal</span>
+              <span
+                style={{
+                  background: location.pathname === '/renewal-insurance' ? 'rgba(255,255,255,0.25)' : '#ef4444',
+                  color: '#ffffff',
+                  fontSize: '0.66rem',
+                  fontWeight: 900,
+                  padding: '2px 7px',
+                  borderRadius: '10px',
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                🔥 85% OFF
+              </span>
+            </button>
+
+            {/* Insurance Dropdown */}
+            <div
+              className="header-dropdown-container"
+              style={{ position: 'relative' }}
+              onMouseEnter={() => handleMouseEnter('insurance')}
+              onMouseLeave={handleMouseLeave}
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDropdown(activeDropdown === 'insurance' ? null : 'insurance');
+                }}
+                style={{
+                  background: (location.pathname.includes('insurance') && location.pathname !== '/claim-insurance' && location.pathname !== '/renewal-insurance') ? '#2563eb' : 'transparent',
+                  border: 'none',
+                  color: (location.pathname.includes('insurance') && location.pathname !== '/claim-insurance' && location.pathname !== '/renewal-insurance') ? '#ffffff' : '#334155',
+                  fontSize: '0.92rem',
+                  fontWeight: 700,
+                  padding: '7px 18px',
+                  borderRadius: '9999px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: (location.pathname.includes('insurance') && location.pathname !== '/claim-insurance' && location.pathname !== '/renewal-insurance') ? '0 4px 12px rgba(37, 99, 235, 0.28)' : 'none',
+                }}
+              >
+                <span>Insurance</span>
+                <IonIcon
+                  icon={chevronDownOutline}
+                  style={{
+                    fontSize: '0.8rem',
+                    transform: activeDropdown === 'insurance' ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.2s',
+                  }}
+                />
+              </button>
+
+              {activeDropdown === 'insurance' && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    paddingTop: '6px',
+                    zIndex: 1000,
+                  }}
+                >
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '14px',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.12)',
+                      border: '1px solid #e2e8f0',
+                      minWidth: '220px',
+                      padding: '8px',
+                    }}
+                  >
+                    <button
+                      onClick={() => navTo('/renewal-insurance')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: location.pathname === '/renewal-insurance' ? '#f0f7ff' : 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: location.pathname === '/renewal-insurance' ? '#2563eb' : '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🔄</span>
+                        <span>Renewal Insurance</span>
+                      </div>
+                      <span style={{ fontSize: '0.68rem', background: '#fef08a', color: '#854d0e', padding: '2px 6px', borderRadius: '6px', fontWeight: 800 }}>
+                        Offers
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => navTo('/car-insurance')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: location.pathname === '/car-insurance' ? '#f0f7ff' : 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>🚗</span>
+                      <span>Car Insurance</span>
+                    </button>
+
+                    <button
+                      onClick={() => navTo('/check-insurance')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: location.pathname === '/check-insurance' ? '#f0f7ff' : 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: location.pathname === '/check-insurance' ? '#2563eb' : '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>🛡️</span>
+                      <span>Check Insurance Status</span>
+                    </button>
+
+                    <button
+                      onClick={() => navTo('/bike-insurance')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: location.pathname === '/bike-insurance' ? '#f0f7ff' : 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>🛵</span>
+                      <span>Bike Insurance</span>
+                    </button>
+
+                    <button
+                      onClick={() => navTo('/insurance')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.85rem',
+                        fontWeight: 500,
+                        color: '#2563eb',
+                        cursor: 'pointer',
+                        borderTop: '1px solid #f1f5f9',
+                        marginTop: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span>⚡ Compare All Quotes</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+          
             {/* Vehicleinfo Active Blue Pill Dropdown */}
-            <div className="header-dropdown-container" style={{ position: 'relative' }}>
+            <div
+              className="header-dropdown-container"
+              style={{ position: 'relative' }}
+              onMouseEnter={() => handleMouseEnter('vehicleinfo')}
+              onMouseLeave={handleMouseLeave}
+            >
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -490,88 +546,99 @@ export const Header: React.FC<HeaderProps> = ({
                 <div
                   style={{
                     position: 'absolute',
-                    top: 'calc(100% + 8px)',
+                    top: '100%',
                     left: 0,
-                    background: '#ffffff',
-                    borderRadius: '14px',
-                    boxShadow: '0 12px 30px rgba(0, 0, 0, 0.12)',
-                    border: '1px solid #e2e8f0',
-                    minWidth: '220px',
-                    padding: '8px',
+                    paddingTop: '6px',
                     zIndex: 1000,
                   }}
                 >
-                  <button
-                    onClick={() => navTo('/rc-search')}
+                  <div
                     style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
+                      background: '#ffffff',
+                      borderRadius: '14px',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.12)',
+                      border: '1px solid #e2e8f0',
+                      minWidth: '220px',
+                      padding: '8px',
                     }}
                   >
-                    <span>🔍</span>
-                    <span>RC Search Details</span>
-                  </button>
+                    <button
+                      onClick={() => navTo('/rc-search')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>🔍</span>
+                      <span>RC Search Details</span>
+                    </button>
 
-                  <button
-                    onClick={() => navTo('/home')}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>🚨</span>
-                    <span>Check Challan Online</span>
-                  </button>
+                    <button
+                      onClick={() => navTo('/home')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>🚨</span>
+                      <span>Check Challan Online</span>
+                    </button>
 
-                  <button
-                    onClick={() => navTo('/garage')}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>🏠</span>
-                    <span>My Garage & Vault</span>
-                  </button>
+                    <button
+                      onClick={() => navTo('/garage')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>🏠</span>
+                      <span>My Garage & Vault</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Service Dropdown */}
-            <div className="header-dropdown-container" style={{ position: 'relative' }}>
+            <div
+              className="header-dropdown-container"
+              style={{ position: 'relative' }}
+              onMouseEnter={() => handleMouseEnter('service')}
+              onMouseLeave={handleMouseLeave}
+            >
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -608,82 +675,88 @@ export const Header: React.FC<HeaderProps> = ({
                 <div
                   style={{
                     position: 'absolute',
-                    top: 'calc(100% + 8px)',
+                    top: '100%',
                     left: 0,
-                    background: '#ffffff',
-                    borderRadius: '14px',
-                    boxShadow: '0 12px 30px rgba(0, 0, 0, 0.12)',
-                    border: '1px solid #e2e8f0',
-                    minWidth: '220px',
-                    padding: '8px',
+                    paddingTop: '6px',
                     zIndex: 1000,
                   }}
                 >
-                  <button
-                    onClick={() => navTo('/services')}
+                  <div
                     style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
+                      background: '#ffffff',
+                      borderRadius: '14px',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.12)',
+                      border: '1px solid #e2e8f0',
+                      minWidth: '220px',
+                      padding: '8px',
                     }}
                   >
-                    <span>📝</span>
-                    <span>RTO Mock Exam & Test</span>
-                  </button>
+                    <button
+                      onClick={() => navTo('/services')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>📝</span>
+                      <span>RTO Mock Exam & Test</span>
+                    </button>
 
-                  <button
-                    onClick={() => navTo('/services')}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>💳</span>
-                    <span>FASTag Recharge</span>
-                  </button>
+                    <button
+                      onClick={() => navTo('/services')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>💳</span>
+                      <span>FASTag Recharge</span>
+                    </button>
 
-                  <button
-                    onClick={() => navTo('/services')}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>🪪</span>
-                    <span>Driving Licence Info</span>
-                  </button>
+                    <button
+                      onClick={() => navTo('/services')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>🪪</span>
+                      <span>Driving Licence Info</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -691,6 +764,10 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Blogs */}
             <button
               onClick={() => navTo('/services')}
+              onMouseEnter={() => {
+                if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+                setActiveDropdown(null);
+              }}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -707,48 +784,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </nav>
 
-          {/* Right Controls: City Selector & Login Pill */}
+          {/* Right Controls: Login Pill */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            {/* Location Selector Pill */}
-            <button
-              onClick={() => setShowCityPicker(true)}
-              title={isLiveLocation ? `Live Location: ${selectedCity}` : `City: ${selectedCity} (Click to set live location)`}
-              style={{
-                background: isLiveLocation ? '#f0fdf4' : '#f8fafc',
-                border: `1.5px solid ${isLiveLocation ? '#86efac' : '#e2e8f0'}`,
-                borderRadius: '24px',
-                color: isLiveLocation ? '#15803d' : '#334155',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                padding: '7px 14px',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s ease',
-                boxShadow: isLiveLocation ? '0 2px 10px rgba(34, 197, 94, 0.16)' : 'none',
-              }}
-            >
-              <span style={{ color: isLiveLocation ? '#16a34a' : '#2563eb', display: 'flex', alignItems: 'center' }}>
-                {isLocating ? (
-                  <span style={{ animation: 'spin 1s linear infinite' }}>⏳</span>
-                ) : isLiveLocation ? (
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a', display: 'inline-block', boxShadow: '0 0 0 3px rgba(34, 197, 94, 0.3)' }} />
-                ) : (
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#2563eb">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                  </svg>
-                )}
-              </span>
-              <span>{isLocating ? 'Detecting...' : selectedCity}</span>
-              {isLiveLocation && !isLocating && (
-                <span style={{ fontSize: '0.64rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, letterSpacing: '0.3px' }}>
-                  LIVE
-                </span>
-              )}
-            </button>
-
             {/* Login Dark Button */}
             <button
               onClick={() => setShowLoginModal(true)}

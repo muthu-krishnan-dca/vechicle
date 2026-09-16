@@ -12,10 +12,12 @@ import { CarInsurancePage } from './pages/CarInsurancePage';
 import { BikeInsurancePage } from './pages/BikeInsurancePage';
 import { CheckInsurancePage } from './pages/CheckInsurancePage';
 import { ClaimInsurancePage } from './pages/ClaimInsurancePage';
+import { RenewalInsurancePage } from './pages/RenewalInsurancePage';
 import { HomeTab } from './pages/HomeTab';
 import { InsuranceTab } from './pages/InsuranceTab';
 import { GarageTab } from './pages/GarageTab';
 import { ServicesTab } from './pages/ServicesTab';
+import { AdminPortalPage } from './pages/AdminPortalPage';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -51,12 +53,14 @@ const App: React.FC = () => (
         <Route path="/bike-insurance" element={<BikeInsurancePage />} />
         <Route path="/check-insurance" element={<CheckInsurancePage />} />
         <Route path="/claim-insurance" element={<ClaimInsurancePage />} />
+        <Route path="/renewal-insurance" element={<RenewalInsurancePage />} />
 
         {/* Other Pages */}
         <Route path="/home" element={<HomeTab />} />
         <Route path="/insurance" element={<InsuranceTab />} />
         <Route path="/garage" element={<GarageTab />} />
         <Route path="/services" element={<ServicesTab />} />
+        <Route path="/admin" element={<AdminPortalPage />} />
 
         {/* Fallback redirects */}
         <Route path="/rc-status" element={<Navigate to="/rc-search" replace />} />

@@ -15,9 +15,11 @@ from .views import (
     ClaimSurveyorActionView,
     EChallanCaptchaView,
     EChallanSearchView,
+    AdminStatsView,
 )
 
 urlpatterns = [
+    path('admin/stats/', AdminStatsView.as_view(), name='admin-stats'),
     path('quotes/', QuoteCalculatorView.as_view(), name='quote-calculator'),
     path('vehicle/', VehicleRCView.as_view(), name='vehicle-rc-create'),
     path('vehicle/<str:reg_no>/', VehicleRCView.as_view(), name='vehicle-rc-status'),

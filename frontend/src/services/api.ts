@@ -281,6 +281,28 @@ export const api = {
     const res = await apiClient.post<EchallanSearchResponse>('/scraper/echallan/search/', payload);
     return res.data;
   },
+
+  // Admin Management Endpoints
+  getAdminStats: async (): Promise<AdminStatsResponse> => {
+    const res = await apiClient.get<AdminStatsResponse>('/admin/stats/');
+    return res.data;
+  },
+
+  getAllVehicles: async (search?: string): Promise<VehicleRecord[]> => {
+    const params = search ? { search } : {};
+    const res = await apiClient.get<VehicleRecord[]>('/vehicle/', { params });
+    return res.data;
+  },
+
+  deleteVehicle: async (regNo: string): Promise<{ message: string }> => {
+    const res = await apiClient.delete<{ message: string }>(`/vehicle/${encodeURIComponent(regNo)}/`);
+    return res.data;
+  },
+
+  saveVehicle: async (payload: Partial<VehicleRecord>): Promise<{ message: string; vehicle: VehicleRecord }> => {
+    const res = await apiClient.post<{ message: string; vehicle: VehicleRecord }>('/vehicle/', payload);
+    return res.data;
+  },
 };
 
 export interface EchallanCaptchaResponse {
@@ -382,4 +404,32 @@ export interface ClaimRecord {
   created_at: string;
   updated_at: string;
 }
+
+export interface AdminStatsResponse {
+  vehicles: {
+    total: number;
+  };
+  challans: {
+    total: number;
+    pending: number;
+    paid: number;
+    fines_pending: number;
+    fines_collected: number;
+  };
+  policies: {
+    total: number;
+    total_premium: number;
+  };
+  claims: {
+    total: number;
+    pending: number;
+    approved: number;
+    settled: number;
+    rejected: number;
+  };
+  rto_questions: number;
+  status: string;
+  server_time: string;
+}
+
 

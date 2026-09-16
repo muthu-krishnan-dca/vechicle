@@ -41,6 +41,8 @@ export const AdminPortalPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [challanFilter, setChallanFilter] = useState<'ALL' | 'PENDING' | 'PAID'>('ALL');
   const [claimFilter, setClaimFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'SETTLED' | 'REJECTED'>('ALL');
+  const [selectedRtoState, setSelectedRtoState] = useState<string>('All');
+  const [groupRtoByState, setGroupRtoByState] = useState<boolean>(true);
 
   // Selected Item Modal
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleRecord | null>(null);
@@ -272,16 +274,45 @@ export const AdminPortalPage: React.FC = () => {
     });
   }, [claims, claimFilter, searchQuery]);
 
+  // RTO State Directory Memo
+  const rtoStateCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: ALL_INDIA_RTO_OFFICES.length };
+    ALL_INDIA_RTO_OFFICES.forEach((o) => {
+      counts[o.state] = (counts[o.state] || 0) + 1;
+    });
+    return counts;
+  }, []);
+
+  const rtoStateList = useMemo(() => {
+    const keys = Object.keys(rtoStateCounts).filter((k) => k !== 'All');
+    keys.sort((a, b) => rtoStateCounts[b] - rtoStateCounts[a]);
+    return ['All', ...keys];
+  }, [rtoStateCounts]);
+
   const filteredRTOs = useMemo(() => {
-    if (!searchQuery.trim()) return ALL_INDIA_RTO_OFFICES;
-    const q = searchQuery.toLowerCase();
-    return ALL_INDIA_RTO_OFFICES.filter((r: RtoOfficeItem) =>
-      r.code.toLowerCase().includes(q) ||
-      r.name.toLowerCase().includes(q) ||
-      r.city.toLowerCase().includes(q) ||
-      r.state.toLowerCase().includes(q)
-    );
-  }, [searchQuery]);
+    const q = searchQuery.toLowerCase().trim();
+    return ALL_INDIA_RTO_OFFICES.filter((r: RtoOfficeItem) => {
+      const matchesState = selectedRtoState === 'All' || r.state === selectedRtoState;
+      if (!matchesState) return false;
+      if (!q) return true;
+      return (
+        r.code.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        r.city.toLowerCase().includes(q) ||
+        r.state.toLowerCase().includes(q) ||
+        (r.jurisdiction && r.jurisdiction.some(j => j.toLowerCase().includes(q)))
+      );
+    });
+  }, [selectedRtoState, searchQuery]);
+
+  const groupedRTOsByState = useMemo(() => {
+    const groups: Record<string, RtoOfficeItem[]> = {};
+    filteredRTOs.forEach(rto => {
+      if (!groups[rto.state]) groups[rto.state] = [];
+      groups[rto.state].push(rto);
+    });
+    return groups;
+  }, [filteredRTOs]);
 
   // Auth Gate UI
   if (!isAuthenticated) {
@@ -290,7 +321,7 @@ export const AdminPortalPage: React.FC = () => {
         <IonContent fullscreen className="admin-login-screen">
           <div style={{
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #fff1f5 0%, #fdf2f8 50%, #ffe4e6 100%)',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -304,8 +335,8 @@ export const AdminPortalPage: React.FC = () => {
               background: '#ffffff',
               borderRadius: '28px',
               padding: '40px 32px',
-              border: '1px solid #fbcfe8',
-              boxShadow: '0 25px 60px -15px rgba(236, 72, 153, 0.18), 0 10px 20px -5px rgba(0, 0, 0, 0.04)',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.18), 0 10px 20px -5px rgba(0, 0, 0, 0.06)',
               textAlign: 'center',
             }}>
               <div style={{ display: 'flex', justifyContent: 'center', margin: '0 auto 16px' }}>
@@ -316,12 +347,12 @@ export const AdminPortalPage: React.FC = () => {
                 fontSize: '11px',
                 fontWeight: 700,
                 letterSpacing: '0.1em',
-                color: '#be185d',
-                background: '#fce7f3',
+                color: '#ffffff',
+                background: '#0f172a',
                 padding: '4px 14px',
                 borderRadius: '100px',
                 textTransform: 'uppercase',
-                border: '1px solid #fbcfe8',
+                border: '1px solid #334155',
               }}>
                 VehicleInfo Control Room
               </span>
@@ -341,9 +372,9 @@ export const AdminPortalPage: React.FC = () => {
 
               {pinError && (
                 <div style={{
-                  background: '#fff1f2',
-                  border: '1px solid #fecdd3',
-                  color: '#e11d48',
+                  background: '#fef2f2',
+                  border: '1px solid #fca5a5',
+                  color: '#dc2626',
                   padding: '10px 14px',
                   borderRadius: '12px',
                   fontSize: '12px',
@@ -370,8 +401,8 @@ export const AdminPortalPage: React.FC = () => {
                     style={{
                       width: '100%',
                       padding: '13px 16px',
-                      background: '#fff8fa',
-                      border: '1.5px solid #fbcfe8',
+                      background: '#f8fafc',
+                      border: '1.5px solid #cbd5e1',
                       borderRadius: '12px',
                       color: '#0f172a',
                       fontSize: '15px',
@@ -386,13 +417,13 @@ export const AdminPortalPage: React.FC = () => {
                   style={{
                     padding: '14px',
                     borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #ec4899 0%, #e11d48 100%)',
+                    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
                     border: 'none',
                     color: '#ffffff',
                     fontWeight: 700,
                     fontSize: '14px',
                     cursor: 'pointer',
-                    boxShadow: '0 8px 20px rgba(236, 72, 153, 0.35)',
+                    boxShadow: '0 8px 20px rgba(15, 23, 42, 0.35)',
                     transition: 'transform 0.15s ease',
                   }}
                 >
@@ -400,11 +431,11 @@ export const AdminPortalPage: React.FC = () => {
                 </button>
               </form>
 
-              <div style={{ marginTop: '24px', borderTop: '1px solid #fce7f3', paddingTop: '16px' }}>
+              <div style={{ marginTop: '24px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
                 <a
                   href="/rc-search"
                   style={{
-                    color: '#db2777',
+                    color: '#475569',
                     textDecoration: 'none',
                     fontSize: '13px',
                     fontWeight: 600,
@@ -425,7 +456,7 @@ export const AdminPortalPage: React.FC = () => {
       <IonContent fullscreen className="admin-portal-content">
         <div style={{
           minHeight: '100vh',
-          background: 'linear-gradient(180deg, #fff5f8 0%, #fdf2f8 35%, #ffffff 100%)',
+          background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 35%, #ffffff 100%)',
           fontFamily: "'Inter', -apple-system, sans-serif",
           color: '#0f172a',
           display: 'flex',
@@ -433,8 +464,8 @@ export const AdminPortalPage: React.FC = () => {
         }}>
           {/* Top Admin Navigation Bar */}
           <header style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            borderBottom: '1px solid #fce7f3',
+            background: 'rgba(255, 255, 255, 0.97)',
+            borderBottom: '1px solid #e2e8f0',
             padding: '14px 24px',
             display: 'flex',
             alignItems: 'center',
@@ -443,7 +474,7 @@ export const AdminPortalPage: React.FC = () => {
             top: 0,
             zIndex: 100,
             backdropFilter: 'blur(12px)',
-            boxShadow: '0 4px 20px -4px rgba(244, 114, 182, 0.12)',
+            boxShadow: '0 4px 20px -4px rgba(15, 23, 42, 0.1)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <BrandLogo size={38} showText={false} />
@@ -455,16 +486,16 @@ export const AdminPortalPage: React.FC = () => {
                   <span style={{
                     fontSize: '10px',
                     fontWeight: 700,
-                    color: '#db2777',
-                    background: '#fdf2f8',
+                    color: '#ffffff',
+                    background: '#0f172a',
                     padding: '2px 8px',
                     borderRadius: '6px',
-                    border: '1px solid #fbcfe8',
+                    border: '1px solid #334155',
                   }}>
                     ● LIVE PORTAL
                   </span>
                 </div>
-                <div style={{ fontSize: '11px', color: '#9d174d' }}>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>
                   Unified Operations & Master Control Center
                 </div>
               </div>
@@ -478,8 +509,8 @@ export const AdminPortalPage: React.FC = () => {
                 title="Refresh Live Data"
                 style={{
                   background: '#ffffff',
-                  border: '1px solid #fce7f3',
-                  color: '#be185d',
+                  border: '1px solid #e2e8f0',
+                  color: '#334155',
                   padding: '8px 14px',
                   borderRadius: '10px',
                   fontSize: '12px',
@@ -488,7 +519,7 @@ export const AdminPortalPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  boxShadow: '0 2px 6px rgba(244, 114, 182, 0.08)',
+                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.06)',
                 }}
               >
                 <svg
@@ -511,7 +542,7 @@ export const AdminPortalPage: React.FC = () => {
               <button
                 onClick={() => setShowAddVehicleModal(true)}
                 style={{
-                  background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+                  background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
                   border: 'none',
                   color: '#ffffff',
                   padding: '8px 16px',
@@ -522,7 +553,7 @@ export const AdminPortalPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  boxShadow: '0 4px 14px rgba(236, 72, 153, 0.35)',
+                  boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
                 }}
               >
                 + Register Vehicle
@@ -533,9 +564,9 @@ export const AdminPortalPage: React.FC = () => {
                 onClick={handleLogout}
                 title="Lock Admin Screen"
                 style={{
-                  background: '#fff1f2',
-                  border: '1px solid #fecdd3',
-                  color: '#e11d48',
+                  background: '#fef2f2',
+                  border: '1px solid #fca5a5',
+                  color: '#dc2626',
                   padding: '8px 14px',
                   borderRadius: '10px',
                   fontSize: '12px',
@@ -558,8 +589,8 @@ export const AdminPortalPage: React.FC = () => {
                 title="Logout & Leave Admin Portal"
                 style={{
                   background: '#ffffff',
-                  border: '1px solid #fce7f3',
-                  color: '#db2777',
+                  border: '1px solid #e2e8f0',
+                  color: '#475569',
                   padding: '8px 14px',
                   borderRadius: '10px',
                   fontSize: '12px',
@@ -568,7 +599,7 @@ export const AdminPortalPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
-                  boxShadow: '0 2px 6px rgba(244, 114, 182, 0.08)',
+                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.06)',
                 }}
               >
                 🚪 Leave
@@ -579,7 +610,7 @@ export const AdminPortalPage: React.FC = () => {
           {/* Toast Notification Banner */}
           {actionSuccessMsg && (
             <div style={{
-              background: 'linear-gradient(90deg, #ec4899 0%, #db2777 100%)',
+              background: 'linear-gradient(90deg, #1e293b 0%, #0f172a 100%)',
               color: '#ffffff',
               padding: '10px 24px',
               fontSize: '13px',
@@ -587,7 +618,7 @@ export const AdminPortalPage: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              boxShadow: '0 4px 14px rgba(236, 72, 153, 0.35)',
+              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.35)',
             }}>
               <span>✅ {actionSuccessMsg}</span>
               <button
@@ -605,18 +636,18 @@ export const AdminPortalPage: React.FC = () => {
             <aside style={{
               width: '260px',
               background: '#ffffff',
-              borderRight: '1px solid #fce7f3',
+              borderRight: '1px solid #e2e8f0',
               padding: '20px 14px',
               display: 'flex',
               flexDirection: 'column',
               gap: '6px',
               flexShrink: 0,
-              boxShadow: '4px 0 20px -4px rgba(244, 114, 182, 0.06)',
+              boxShadow: '4px 0 20px -4px rgba(15, 23, 42, 0.06)',
             }}>
               <div style={{
                 fontSize: '11px',
                 fontWeight: 700,
-                color: '#9d174d',
+                color: '#64748b',
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em',
                 padding: '6px 12px',
@@ -648,15 +679,15 @@ export const AdminPortalPage: React.FC = () => {
                       justifyContent: 'space-between',
                       padding: '11px 14px',
                       borderRadius: '12px',
-                      background: isActive ? 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)' : 'transparent',
-                      border: isActive ? '1px solid #f472b6' : '1px solid transparent',
-                      color: isActive ? '#be185d' : '#64748b',
+                      background: isActive ? 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)' : 'transparent',
+                      border: isActive ? '1px solid #94a3b8' : '1px solid transparent',
+                      color: isActive ? '#0f172a' : '#64748b',
                       fontWeight: isActive ? 700 : 500,
                       fontSize: '13px',
                       cursor: 'pointer',
                       textAlign: 'left',
                       transition: 'all 0.15s ease',
-                      boxShadow: isActive ? '0 2px 8px rgba(244, 114, 182, 0.2)' : 'none',
+                      boxShadow: isActive ? '0 2px 8px rgba(15, 23, 42, 0.12)' : 'none',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -669,8 +700,8 @@ export const AdminPortalPage: React.FC = () => {
                         fontWeight: 700,
                         padding: '2px 8px',
                         borderRadius: '100px',
-                        background: isActive ? '#ec4899' : '#fce7f3',
-                        color: isActive ? '#ffffff' : '#9d174d',
+                        background: isActive ? '#0f172a' : '#e2e8f0',
+                        color: isActive ? '#ffffff' : '#475569',
                       }}>
                         {item.count}
                       </span>
@@ -679,25 +710,7 @@ export const AdminPortalPage: React.FC = () => {
                 );
               })}
 
-              <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid #fce7f3' }}>
-                <div style={{
-                  background: '#fff8fa',
-                  borderRadius: '14px',
-                  padding: '12px',
-                  border: '1px solid #fce7f3',
-                }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#be185d', marginBottom: '4px' }}>
-                    Database Connectivity
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#059669', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-                    MySQL (vehicleinfo_db)
-                  </div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px' }}>
-                    Django REST Engine v5.0.6
-                  </div>
-                </div>
-              </div>
+
             </aside>
 
             {/* Main Content Area */}
@@ -705,7 +718,7 @@ export const AdminPortalPage: React.FC = () => {
               flex: 1,
               padding: '24px 30px',
               overflowY: 'auto',
-              background: 'linear-gradient(180deg, #fff5f8 0%, #fdf2f8 35%, #ffffff 100%)',
+              background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 35%, #ffffff 100%)',
             }}>
               {loading && !refreshing && (
                 <div style={{ textAlign: 'center', padding: '60px 0' }}>
@@ -740,12 +753,12 @@ export const AdminPortalPage: React.FC = () => {
                       onClick={() => setActiveTab('vehicles')}
                       style={{
                         background: '#ffffff',
-                        border: '1px solid #fce7f3',
+                        border: '1px solid #e2e8f0',
                         borderRadius: '20px',
                         padding: '22px',
                         cursor: 'pointer',
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                        boxShadow: '0 8px 25px -4px rgba(244, 114, 182, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.02)',
+                        boxShadow: '0 8px 25px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02)',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -1745,86 +1758,513 @@ export const AdminPortalPage: React.FC = () => {
                 </div>
               )}
 
-              {/* TAB 6: RTO MASTER DATA */}
+              {/* TAB 6: RTO MASTER DATA - STATE-WISE DIRECTORY */}
               {activeTab === 'rto' && (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  {/* Header & Main Search */}
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '16px',
+                    marginBottom: '20px',
+                  }}>
                     <div>
-                      <h1 style={{ fontSize: '22px', fontWeight: 800, margin: '0 0 4px', color: '#0f172a' }}>
-                        All-India RTO Master Directory
-                      </h1>
-                      <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
-                        Complete database of {ALL_INDIA_RTO_OFFICES.length} Regional Transport Offices across Tamil Nadu and India.
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                          All-India RTO Master Directory
+                        </h1>
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#ffffff',
+                          background: '#0f172a',
+                          padding: '2px 10px',
+                          borderRadius: '100px',
+                          border: '1px solid #334155',
+                        }}>
+                          {ALL_INDIA_RTO_OFFICES.length} Offices Across India
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                        State-wise database across {rtoStateList.length - 1} States & Union Territories with jurisdictions, contacts & address details.
                       </p>
                     </div>
 
-                    <input
-                      type="text"
-                      placeholder="Search RTO code (e.g. TN-92, TN-96, MH-01)..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      style={{
-                        padding: '9px 14px',
-                        background: '#ffffff',
-                        border: '1px solid #fbcfe8',
-                        borderRadius: '10px',
-                        color: '#0f172a',
-                        fontSize: '13px',
-                        minWidth: '280px',
-                        outline: 'none',
-                        boxShadow: '0 2px 6px rgba(236, 72, 153, 0.05)',
-                      }}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      {/* State Dropdown Picker */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569' }}>
+                          State:
+                        </label>
+                        <select
+                          value={selectedRtoState}
+                          onChange={(e) => setSelectedRtoState(e.target.value)}
+                          style={{
+                            padding: '9px 12px',
+                            background: '#ffffff',
+                            border: '1.5px solid #cbd5e1',
+                            borderRadius: '10px',
+                            color: '#0f172a',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            outline: 'none',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+                          }}
+                        >
+                          {rtoStateList.map((st) => (
+                            <option key={st} value={st}>
+                              {st === 'All' ? `🇮🇳 All States & UTs (${ALL_INDIA_RTO_OFFICES.length})` : `${st} (${rtoStateCounts[st]})`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Search Bar */}
+                      <input
+                        type="text"
+                        placeholder="Search code, city, state, area (e.g. TN-92, MH-12, Pune)..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                          padding: '9px 14px',
+                          background: '#ffffff',
+                          border: '1.5px solid #cbd5e1',
+                          borderRadius: '10px',
+                          color: '#0f172a',
+                          fontSize: '13px',
+                          minWidth: '280px',
+                          outline: 'none',
+                          boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+                        }}
+                      />
+
+                      {/* Group by State Toggle */}
+                      {selectedRtoState === 'All' && !searchQuery.trim() && (
+                        <button
+                          onClick={() => setGroupRtoByState(!groupRtoByState)}
+                          style={{
+                            padding: '9px 14px',
+                            background: groupRtoByState ? '#0f172a' : '#ffffff',
+                            border: '1.5px solid #0f172a',
+                            color: groupRtoByState ? '#ffffff' : '#0f172a',
+                            borderRadius: '10px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 2px 6px rgba(15, 23, 42, 0.08)',
+                          }}
+                        >
+                          <span>📁</span>
+                          <span>{groupRtoByState ? 'State Sections Active' : 'Group by State'}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
+                  {/* Horizontal Scrollable State Filter Pills */}
                   <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                    gap: '14px',
+                    display: 'flex',
+                    gap: '8px',
+                    overflowX: 'auto',
+                    paddingBottom: '12px',
+                    marginBottom: '18px',
+                    scrollbarWidth: 'thin',
                   }}>
-                    {filteredRTOs.map((rto: RtoOfficeItem) => (
-                      <div
-                        key={rto.code}
+                    {rtoStateList.map((st) => {
+                      const isSel = selectedRtoState === st;
+                      const count = rtoStateCounts[st] || 0;
+                      return (
+                        <button
+                          key={st}
+                          onClick={() => setSelectedRtoState(st)}
+                          style={{
+                            padding: '7px 14px',
+                            borderRadius: '100px',
+                            border: isSel ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
+                            background: isSel ? '#0f172a' : '#ffffff',
+                            color: isSel ? '#ffffff' : '#334155',
+                            fontWeight: isSel ? 700 : 500,
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: isSel ? '0 4px 12px rgba(15, 23, 42, 0.2)' : '0 1px 3px rgba(0, 0, 0, 0.04)',
+                            transition: 'all 0.15s ease',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <span>{st === 'All' ? '🇮🇳 All India' : st}</span>
+                          <span style={{
+                            fontSize: '10px',
+                            padding: '1px 6px',
+                            borderRadius: '100px',
+                            background: isSel ? '#ffffff' : '#f1f5f9',
+                            color: isSel ? '#0f172a' : '#64748b',
+                            fontWeight: 700,
+                          }}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Active Filter Summary Bar */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 16px',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    marginBottom: '20px',
+                    fontSize: '12px',
+                    color: '#64748b',
+                  }}>
+                    <div>
+                      Showing <strong style={{ color: '#0f172a' }}>{filteredRTOs.length}</strong> offices in{' '}
+                      <strong style={{ color: '#0f172a' }}>
+                        {selectedRtoState === 'All' ? 'All Indian States & UTs' : selectedRtoState}
+                      </strong>
+                      {searchQuery && <span> matching "{searchQuery}"</span>}
+                    </div>
+                    {selectedRtoState !== 'All' && (
+                      <button
+                        onClick={() => setSelectedRtoState('All')}
                         style={{
-                          background: '#ffffff',
-                          border: '1px solid #fce7f3',
-                          borderRadius: '14px',
-                          padding: '16px',
-                          boxShadow: '0 4px 16px rgba(236, 72, 153, 0.05)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#0f172a',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                          fontSize: '12px',
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{
-                            background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
-                            color: '#ffffff',
-                            fontSize: '12px',
-                            fontWeight: 800,
-                            padding: '3px 10px',
-                            borderRadius: '6px',
-                            letterSpacing: '0.05em',
-                            boxShadow: '0 2px 6px rgba(236, 72, 153, 0.25)',
-                          }}>
-                            {rto.code}
-                          </span>
-                          <span style={{ fontSize: '11px', color: '#be185d', fontWeight: 700 }}>
-                            {rto.state}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
-                          {rto.name}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>
-                          City / Region: <strong style={{ color: '#0f172a' }}>{rto.city}</strong>
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', lineHeight: '1.4' }}>
-                          {rto.address}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#db2777', marginTop: '6px', fontWeight: 600 }}>
-                          📞 {rto.phone}
-                        </div>
-                      </div>
-                    ))}
+                        Reset to All States &rarr;
+                      </button>
+                    )}
                   </div>
+
+                  {/* RTO Cards Display: Grouped by State OR Flat Grid */}
+                  {groupRtoByState && selectedRtoState === 'All' && !searchQuery.trim() ? (
+                    /* State Grouped View */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                      {Object.keys(groupedRTOsByState).map((stateName) => {
+                        const stateOffices = groupedRTOsByState[stateName];
+                        return (
+                          <div key={stateName}>
+                            {/* State Group Header */}
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              paddingBottom: '10px',
+                              borderBottom: '2px solid #e2e8f0',
+                              marginBottom: '16px',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <h3 style={{ fontSize: '18px', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+                                  🏛️ {stateName}
+                                </h3>
+                                <span style={{
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  background: '#0f172a',
+                                  color: '#ffffff',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                }}>
+                                  {stateOffices.length} RTOs
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => setSelectedRtoState(stateName)}
+                                style={{
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '8px',
+                                  padding: '4px 10px',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                View Only {stateName} &rarr;
+                              </button>
+                            </div>
+
+                            {/* State RTO Grid */}
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
+                              gap: '14px',
+                            }}>
+                              {stateOffices.map((rto: RtoOfficeItem) => (
+                                <div
+                                  key={rto.code}
+                                  style={{
+                                    background: '#ffffff',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '16px',
+                                    padding: '18px',
+                                    boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                                  }}
+                                >
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                      <span style={{
+                                        background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                                        color: '#ffffff',
+                                        fontSize: '13px',
+                                        fontWeight: 800,
+                                        padding: '4px 12px',
+                                        borderRadius: '8px',
+                                        letterSpacing: '0.05em',
+                                        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.25)',
+                                      }}>
+                                        {rto.code}
+                                      </span>
+                                      <span style={{
+                                        fontSize: '11px',
+                                        color: '#475569',
+                                        fontWeight: 700,
+                                        background: '#f1f5f9',
+                                        padding: '2px 8px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #e2e8f0',
+                                      }}>
+                                        {rto.state}
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginBottom: '6px', lineHeight: '1.3' }}>
+                                      {rto.name}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                                      City / Region: <strong style={{ color: '#0f172a' }}>{rto.city}</strong>
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.4', marginBottom: '10px' }}>
+                                      📍 {rto.address}
+                                    </div>
+
+                                    {/* Jurisdictions / Areas Covered */}
+                                    {rto.jurisdiction && rto.jurisdiction.length > 0 && (
+                                      <div style={{ marginBottom: '12px' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                          Jurisdiction Areas:
+                                        </div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                          {rto.jurisdiction.slice(0, 4).map((j) => (
+                                            <span
+                                              key={j}
+                                              style={{
+                                                fontSize: '10px',
+                                                background: '#f8fafc',
+                                                border: '1px solid #e2e8f0',
+                                                color: '#334155',
+                                                padding: '1px 6px',
+                                                borderRadius: '4px',
+                                                fontWeight: 600,
+                                              }}
+                                            >
+                                              {j}
+                                            </span>
+                                          ))}
+                                          {rto.jurisdiction.length > 4 && (
+                                            <span style={{ fontSize: '10px', color: '#64748b', alignSelf: 'center' }}>
+                                              +{rto.jurisdiction.length - 4} more
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div style={{
+                                    borderTop: '1px solid #f1f5f9',
+                                    paddingTop: '10px',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    fontSize: '12px',
+                                  }}>
+                                    <a
+                                      href={`tel:${rto.phone}`}
+                                      style={{
+                                        color: '#0f172a',
+                                        fontWeight: 700,
+                                        textDecoration: 'none',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                      }}
+                                    >
+                                      📞 {rto.phone}
+                                    </a>
+                                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                      PIN: {rto.pincode}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* Standard Filtered Grid View */
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
+                      gap: '14px',
+                    }}>
+                      {filteredRTOs.length === 0 ? (
+                        <div style={{
+                          gridColumn: '1 / -1',
+                          textAlign: 'center',
+                          padding: '60px 20px',
+                          background: '#ffffff',
+                          borderRadius: '16px',
+                          border: '1px dashed #cbd5e1',
+                        }}>
+                          <div style={{ fontSize: '36px', marginBottom: '10px' }}>🔍</div>
+                          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>
+                            No RTO offices found
+                          </h3>
+                          <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                            Try adjusting your search query or select another state.
+                          </p>
+                        </div>
+                      ) : (
+                        filteredRTOs.map((rto: RtoOfficeItem) => (
+                          <div
+                            key={rto.code}
+                            style={{
+                              background: '#ffffff',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '16px',
+                              padding: '18px',
+                              boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <span style={{
+                                  background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                                  color: '#ffffff',
+                                  fontSize: '13px',
+                                  fontWeight: 800,
+                                  padding: '4px 12px',
+                                  borderRadius: '8px',
+                                  letterSpacing: '0.05em',
+                                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.25)',
+                                }}>
+                                  {rto.code}
+                                </span>
+                                <span style={{
+                                  fontSize: '11px',
+                                  color: '#475569',
+                                  fontWeight: 700,
+                                  background: '#f1f5f9',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #e2e8f0',
+                                }}>
+                                  {rto.state}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginBottom: '6px', lineHeight: '1.3' }}>
+                                {rto.name}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                                City / Region: <strong style={{ color: '#0f172a' }}>{rto.city}</strong>
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.4', marginBottom: '10px' }}>
+                                📍 {rto.address}
+                              </div>
+
+                              {/* Jurisdictions / Areas Covered */}
+                              {rto.jurisdiction && rto.jurisdiction.length > 0 && (
+                                <div style={{ marginBottom: '12px' }}>
+                                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                    Jurisdiction Areas:
+                                  </div>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    {rto.jurisdiction.slice(0, 4).map((j) => (
+                                      <span
+                                        key={j}
+                                        style={{
+                                          fontSize: '10px',
+                                          background: '#f8fafc',
+                                          border: '1px solid #e2e8f0',
+                                          color: '#334155',
+                                          padding: '1px 6px',
+                                          borderRadius: '4px',
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        {j}
+                                      </span>
+                                    ))}
+                                    {rto.jurisdiction.length > 4 && (
+                                      <span style={{ fontSize: '10px', color: '#64748b', alignSelf: 'center' }}>
+                                        +{rto.jurisdiction.length - 4} more
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{
+                              borderTop: '1px solid #f1f5f9',
+                              paddingTop: '10px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              fontSize: '12px',
+                            }}>
+                              <a
+                                href={`tel:${rto.phone}`}
+                                style={{
+                                  color: '#0f172a',
+                                  fontWeight: 700,
+                                  textDecoration: 'none',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                📞 {rto.phone}
+                              </a>
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                PIN: {rto.pincode}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

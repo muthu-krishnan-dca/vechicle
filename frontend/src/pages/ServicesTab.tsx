@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -376,131 +376,113 @@ export const ServicesTab: React.FC = () => {
 
           {/* ================= SECTION: CARS ================= */}
           <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '14px' }}>
               <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
-              <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', fontFamily: 'Outfit' }}>
-                Cars
-              </h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.15rem' }}>🚗</span>
+                <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', fontFamily: 'Outfit' }}>
+                  Cars
+                </h4>
+              </div>
               <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px 12px' }}>
-              {carServices.map((c, i) => (
-                <div
-                  key={i}
-                  className="feature-item"
-                  onClick={c.action}
-                  style={{
-                    background: '#ffffff',
-                    borderRadius: '16px',
-                    padding: '16px 10px',
-                    border: '1.5px solid #e2e8f0',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                    transition: 'transform 0.15s ease, border-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.borderColor = '#93c5fd';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                  }}
-                >
+            <div className="car-marquee-wrapper">
+              <div className="car-marquee-track">
+                {/* 2 sets of carServices for seamless infinite moving loop */}
+                {[...carServices, ...carServices].map((c, i) => (
                   <div
-                    style={{
-                      width: '52px',
-                      height: '52px',
-                      borderRadius: '50%',
-                      background: '#f1f5f9',
-                      margin: '0 auto 10px auto',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                    key={`car-${i}`}
+                    className="car-marquee-card"
+                    onClick={c.action}
                   >
-                    <span style={{ fontSize: '1.75rem' }}>{c.icon}</span>
+                    <div className="car-icon-bubble">
+                      <span style={{ fontSize: '1.75rem' }}>{c.icon}</span>
+                    </div>
+                    <span className="car-card-title">
+                      {c.title}
+                    </span>
                   </div>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', lineHeight: 1.25 }}>
-                    {c.title}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
           {/* ================= SECTION: TWO WHEELERS ================= */}
           <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '14px' }}>
               <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
-              <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', fontFamily: 'Outfit' }}>
-                Two wheelers
-              </h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.15rem' }}>🏍️</span>
+                <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', fontFamily: 'Outfit' }}>
+                  Two wheelers
+                </h4>
+              </div>
               <div style={{ flex: 1, height: '1.5px', background: '#e2e8f0' }} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px 12px' }}>
-              {bikeServices.map((b, i) => (
-                <div
-                  key={i}
-                  className="feature-item"
-                  onClick={b.action}
-                  style={{
-                    background: '#ffffff',
-                    borderRadius: '16px',
-                    padding: '16px 10px',
-                    border: '1.5px solid #e2e8f0',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                    transition: 'transform 0.15s ease, border-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.borderColor = '#93c5fd';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                  }}
-                >
+            <div className="car-marquee-wrapper">
+              <div className="car-marquee-track reverse-track">
+                {/* 4 sets of bikeServices for seamless infinite moving loop */}
+                {[...bikeServices, ...bikeServices, ...bikeServices, ...bikeServices].map((b, i) => (
                   <div
-                    style={{
-                      width: '52px',
-                      height: '52px',
-                      borderRadius: '50%',
-                      background: '#f1f5f9',
-                      margin: '0 auto 10px auto',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                    key={`bike-${i}`}
+                    className="car-marquee-card"
+                    onClick={b.action}
                   >
-                    <span style={{ fontSize: '1.75rem' }}>{b.icon}</span>
+                    <div className="car-icon-bubble">
+                      <span style={{ fontSize: '1.75rem' }}>{b.icon}</span>
+                    </div>
+                    <span className="car-card-title">
+                      {b.title}
+                    </span>
                   </div>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'block', lineHeight: 1.25 }}>
-                    {b.title}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* ================= BOTTOM BRANDING ================= */}
-          <div style={{ textAlign: 'center', padding: '28px 18px', background: '#ffffff', borderRadius: '16px', border: '1px solid #f1f5f9', marginBottom: '24px' }}>
-            <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, letterSpacing: '0.05em' }}>
-              Vehicle Info
+          {/* ================= SECTION: REAL CAR & BIKE ACCIDENT VIDEO CARD ================= */}
+          <div className="real-accident-card">
+            <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+              <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, letterSpacing: '0.05em' }}>
+                Vehicle Info
+              </div>
+              <h3 style={{ margin: '4px 0 6px 0', fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: 'Outfit' }}>
+                ALL-IN-ONE VEHICLE SOLUTION
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748b' }}>
+                Accident Spot Assistance & Instant Cashless Claim
+              </p>
             </div>
-            <h3 style={{ margin: '4px 0 12px 0', fontSize: '1.35rem', fontWeight: 900, color: '#94a3b8', letterSpacing: '0.02em', fontFamily: 'Outfit' }}>
-              ALL-IN-ONE<br />VEHICLE SOLUTION
-            </h3>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <svg width="100" height="50" viewBox="0 0 120 60" fill="none">
-                <path d="M20 50C20 25 40 10 60 10C80 10 100 25 100 50H20Z" fill="#cbd5e1" />
-                <path d="M35 50C35 32 46 20 60 20C74 20 85 32 85 50H35Z" fill="#94a3b8" />
-              </svg>
+
+            <div style={{ maxWidth: '820px', margin: '0 auto' }}>
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                disablePictureInPicture
+                disableRemotePlayback
+                poster="/assets/car_bike_accident.jpg"
+                className="real-accident-video"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  maxHeight: '420px',
+                  borderRadius: '16px',
+                  display: 'block',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                }}
+              >
+                <source src="/assets/car_accident_video.webm" type="video/webm" />
+                <img
+                  src="/assets/car_bike_accident.jpg"
+                  alt="Car and Bike Accident Scene"
+                  className="real-accident-img"
+                />
+              </video>
             </div>
           </div>
         </div>

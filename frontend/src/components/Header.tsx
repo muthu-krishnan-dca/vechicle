@@ -3,6 +3,7 @@ import { IonIcon } from '@ionic/react';
 import { chevronDownOutline } from 'ionicons/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BrandLogo } from './BrandLogo';
+import { TrafficRulesModal, RulesTabType } from './TrafficRulesModal';
 
 interface HeaderProps {
   currentCity?: string;
@@ -31,6 +32,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [citySearchQuery, setCitySearchQuery] = useState('');
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRulesModal, setShowRulesModal] = useState(false);
+  const [rulesModalTab, setRulesModalTab] = useState<RulesTabType>('insurance');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -763,15 +766,15 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Blogs */}
             <button
-              onClick={() => navTo('/services')}
+              onClick={() => navTo('/blogs')}
               onMouseEnter={() => {
                 if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
                 setActiveDropdown(null);
               }}
               style={{
-                background: 'transparent',
+                background: location.pathname === '/blogs' ? '#eff6ff' : 'transparent',
                 border: 'none',
-                color: '#334155',
+                color: location.pathname === '/blogs' ? '#2563eb' : '#334155',
                 fontSize: '0.92rem',
                 fontWeight: 700,
                 padding: '7px 18px',
@@ -1037,6 +1040,13 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       )}
+
+      {/* Traffic Rules, Road Rules & Insurance Benefits Modal */}
+      <TrafficRulesModal
+        isOpen={showRulesModal}
+        onClose={() => setShowRulesModal(false)}
+        initialTab={rulesModalTab}
+      />
     </>
   );
 };

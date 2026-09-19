@@ -17,6 +17,7 @@ import { HomeTab } from './pages/HomeTab';
 import { InsuranceTab } from './pages/InsuranceTab';
 import { GarageTab } from './pages/GarageTab';
 import { ServicesTab } from './pages/ServicesTab';
+import { BlogsPage } from './pages/BlogsPage';
 import { AdminPortalPage } from './pages/AdminPortalPage';
 
 /* Core CSS required for Ionic components to work properly */
@@ -60,6 +61,7 @@ const App: React.FC = () => (
         <Route path="/insurance" element={<InsuranceTab />} />
         <Route path="/garage" element={<GarageTab />} />
         <Route path="/services" element={<ServicesTab />} />
+        <Route path="/blogs" element={<BlogsPage />} />
         <Route path="/admin" element={<AdminPortalPage />} />
 
         {/* Fallback redirects */}

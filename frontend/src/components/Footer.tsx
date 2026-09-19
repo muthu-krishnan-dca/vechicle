@@ -49,7 +49,7 @@ export const Footer: React.FC = () => {
               <li><a onClick={() => navigate('/insurance')}>Insurance Quotes</a></li>
               <li><a onClick={() => navigate('/garage')}>My Garage & Vault</a></li>
               <li><a onClick={() => navigate('/services')}>RTO Services & Exam</a></li>
-              <li><a onClick={() => alert('Parivahan Sarathi & Vahan RTO News 2026')}>RTO Blogs & News</a></li>
+              <li><a onClick={() => navigate('/blogs')}>RTO Blogs & News</a></li>
               <li><a onClick={() => alert('Support Helpline: 0261-4100244')}>Contact Us</a></li>
             </ul>
           </div>
